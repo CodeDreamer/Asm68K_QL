@@ -169,6 +169,9 @@ string ChangeFileExt(string in, const string& newExt) {
    if (i != string::npos) {
       s.replace(i, newExt.length(), newExt);
    }
+   else {
+       s.append(newExt);
+   }
 
    return s;
 }
