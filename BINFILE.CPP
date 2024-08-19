@@ -48,15 +48,16 @@ extern bool offsetMode;
 
 int binAddr;
 bool newFile = false;
-unsigned int sectionCount;     // number of sections
-unsigned int byteCount;        // code bytes in current program section
-int byteCountFP;               // byte count file position
-int currentFP;                 // save current file position
+//unsigned int sectionCount;     // number of sections
+//unsigned int byteCount;        // code bytes in current program section
+//int byteCountFP;               // byte count file position
+//int currentFP;                 // save current file position
 extern unsigned int startAddress;     // starting address of program
-int fileSize;                  // count bytes in file
+//int fileSize;                  // count bytes in file
+int execDataSize;
 
 
-int initBin(char *name)
+int initBin(const char *name)
 {
   binFile = fopen(name, "wb");  // create binary file
   if (!binFile) {
@@ -67,11 +68,13 @@ int initBin(char *name)
   }
 
   newFile = true;
-  sectionCount = 0;                     // # of sections
-  byteCount = 0;                        // clear section byte count
+  //sectionCount = 0;                     // # of sections
+  //byteCount = 0;                        // clear section byte count
   binAddr = 0;                          // default address
 
-  fileSize = 0;                         // 0 bytes in header
+  execDataSize = 500;
+
+//  fileSize = 0;                         // 0 bytes in header
 //  fileSize = 20;                        // 20 bytes in header
 
   // write Teeside header to file (removed in EASy68K v4.4.4)
@@ -85,60 +88,76 @@ int initBin(char *name)
   return NORMAL;
 }
 
-
 int outputBin(int newAddr, int data, int size)
 {
-//  int zero = 0;
+  int zero = 0;
+  static const char* headString = "]!QDOS File Header";
 
   try {
-  if (offsetMode)       // don't write data if processing Offset directive
-    return NORMAL;
+      if (offsetMode)       // don't write data if processing Offset directive
+        return NORMAL;
 
-  // init starting address of new file
-  if (newFile)
-  {
-    binAddr = newAddr;
-    newFile = false;
-    sectionCount++;                 // count sections
-    writeBigEndian(newAddr, LONG_SIZE);  // write new address to file
-    byteCountFP = ftell(binFile);   // save file position of byteCount
-    writeBigEndian(0, LONG_SIZE);        // save room for byte count (update later)
-    fileSize += 8;                      // keep track of file size
-  }
+      // init starting address of new file
+      if (newFile)
+      {
+        //binAddr = newAddr;
+        newFile = false;
+        //sectionCount++;                 // count sections
+        //writeBigEndian(newAddr, LONG_SIZE);  // write new address to file
+        //byteCountFP = ftell(binFile);   // save file position of byteCount
+        //writeBigEndian(0, LONG_SIZE);        // save room for byte count (update later)
+        //fileSize += 8;                      // keep track of file size
 
-  // If the new address doesn't follow the previous data's address
-  if (newAddr != binAddr) {
-    currentFP = ftell(binFile);          // save current file position
-    // position file at previous sections byte count
-    fseek(binFile, byteCountFP, SEEK_SET);
-    writeBigEndian(byteCount, LONG_SIZE);     // write previous sections byte count
-    fseek(binFile, currentFP, SEEK_SET); // return file to current position
-    byteCount = 0;                       // clear byte count for new section
+        if (execDataSize) {
+            unsigned char buff[22] = { 0 };
+            strcpy((char*)buff, headString);
+            buff[19] = 15;  // Header size in words
+            buff[21] = 1;   // QDOS executable flag
 
-    sectionCount++;                 // count sections
-    writeBigEndian(newAddr, LONG_SIZE);  // write new address to file
-    byteCountFP = ftell(binFile);   // save file position of byteCount
-    writeBigEndian(0, LONG_SIZE);        // save room for byte count (update later)
-    binAddr = newAddr;
-    fileSize += 8;                      // keep track of file size
-  }
+            fwrite(buff, 1, sizeof(buff), binFile);
+            writeBigEndian(execDataSize, LONG_SIZE);
+            writeBigEndian(0, LONG_SIZE);
+        }
+      }
 
-  // if writing WORD_SIZE or LONG_SIZE data to odd address
-  if ((size != BYTE_SIZE) && (binAddr % 2)) {
-    writeBigEndian(0, BYTE_SIZE);            // pad with byte of 0
-    byteCount++;                        // count the byte
-    binAddr++;                          // next address
-    fileSize += 1;                      // keep track of file size
-  }
+      // if writing WORD_SIZE or LONG_SIZE data to odd address
+      if ((size != BYTE_SIZE) && (newAddr % 2)) {
+          newAddr++;                          // next address
+      }
 
-  writeBigEndian(data, size);           // write the data to the file
-  byteCount += (int) size;             // count the bytes
-  binAddr += (int) size;               // next address
-  fileSize += size;                     // keep track of file size
+      // If the new address doesn't follow the previous data's address
+      if (newAddr > binAddr) {
+        //currentFP = ftell(binFile);          // save current file position
+        // position file at previous sections byte count
+        //fseek(binFile, byteCountFP, SEEK_SET);
+        //writeBigEndian(byteCount, LONG_SIZE);     // write previous sections byte count
+        //fseek(binFile, currentFP, SEEK_SET); // return file to current position
+        //byteCount = 0;                       // clear byte count for new section
 
+        //sectionCount++;                 // count sections
+        //writeBigEndian(newAddr, LONG_SIZE);  // write new address to file
+        //byteCountFP = ftell(binFile);   // save file position of byteCount
+        //writeBigEndian(0, LONG_SIZE);        // save room for byte count (update later)
+
+          while (binAddr + 4 <= newAddr) {
+              fwrite(&zero, 1, 4, binFile);
+              binAddr += 4;
+          }
+
+          if (newAddr > binAddr)
+              fwrite(&zero, 1, newAddr - binAddr, binFile);
+
+        binAddr = newAddr;
+        //fileSize += 8;                      // keep track of file size
+      }
+
+      writeBigEndian(data, size);           // write the data to the file
+      //byteCount += (int) size;             // count the bytes
+      binAddr += (int) size;               // next address
+      //fileSize += size;                     // keep track of file size
   }
   catch( ... ) {
-    sprintf(buffer, "ERROR: An exception occurred in routine 'outputBin'. \n");
+    //sprintf(buffer, "ERROR: An exception occurred in routine 'outputBin'. \n");
     printError(NULL, EXCEPTION, 0);
     return MILD_ERROR;
   }
@@ -149,15 +168,15 @@ int finishBin()
 {
   try {
   // make sure file contains an even number of bytes
-  if (fileSize % 2)                     // if odd size
+  if (binAddr % 2)                     // if odd size
     writeBigEndian(0, 1);               // write an extra byte of 0
 
-  currentFP = ftell(binFile);          // save current file position
-  // position file at previous sections byte count
-  fseek(binFile, byteCountFP, SEEK_SET);
-  writeBigEndian(byteCount, LONG_SIZE);     // write previous sections byte count
+  //currentFP = ftell(binFile);          // save current file position
+  //// position file at previous sections byte count
+  //fseek(binFile, byteCountFP, SEEK_SET);
+  //writeBigEndian(byteCount, LONG_SIZE);     // write previous sections byte count
 
-  rewind(binFile);                      // rewind to start of file
+  //rewind(binFile);                      // rewind to start of file
 
   // write Teeside header to file  removed in EASy68K v4.4.4
   //writeBigEndian(0x0001, WORD_SIZE);         // version # ?
@@ -171,7 +190,7 @@ int finishBin()
   fclose(binFile);
   }
   catch( ... ) {
-    sprintf(buffer, "ERROR: An exception occurred in routine 'finishBin'. \n");
+    //sprintf(buffer, "ERROR: An exception occurred in routine 'finishBin'. \n");
     printError(NULL, EXCEPTION, 0);
     return MILD_ERROR;
   }
@@ -187,18 +206,18 @@ void writeBigEndian(int data, int size)
 
   try {
   // if writing WORD_SIZE or LONG_SIZE data to odd address
-  if ((size != BYTE_SIZE) && (ftell(binFile) % 2))
-  {
-    dataByte = 0;
-    fwrite(&dataByte, 1, 1, binFile);   // pad with byte of 0
-  }
+  //if ((size != BYTE_SIZE) && (ftell(binFile) % 2))
+  //{
+  //  dataByte = 0;
+  //  fwrite(&dataByte, 1, 1, binFile);   // pad with byte of 0
+  //}
 
-  // write data to file
-  for (int i=size-1; i>=0; i--)
-  {
-    dataByte = data >> 8*i;
-    fwrite(&dataByte, 1, 1, binFile);
-  }
+      // write data to file
+      for (int i=size-1; i>=0; i--)
+      {
+        dataByte = data >> 8*i;
+        fwrite(&dataByte, 1, 1, binFile);
+      }
   }
   catch( ... ) {
     sprintf(buffer, "ERROR: An exception occurred in routine 'writeBigEndian'. \n");

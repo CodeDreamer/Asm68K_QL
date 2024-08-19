@@ -127,7 +127,7 @@ static char objErrorMsg[] = "Error writing to object file\n";
 
 //------------------------------------------------------------
 // Output S0-record file header
-int initObj(char *name)
+int initObj(const char *name)
 {
   objFile = fopen(name, "w");
   if (!objFile) {

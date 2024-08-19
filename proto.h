@@ -112,15 +112,19 @@ int	dcb(int, char *, char *, int *);
 
 int	ds(int, char *, char *, int *);
 
+int cnop(int size, char* label, char* op, int* errorPtr);
+
+int dataSize(int size, char* label, char* op, int* errorPtr);
+
 int	printError(FILE *, int, int);
 
-char	*eval(char *, int *, bool *, int *);
+char	*eval(char *, exprVal*, bool *, int *);
 
-char	*evalNumber(char *, int *, bool *, int *);
+char	*evalNumber(char *, exprVal*, bool *, int *);
 
 int	precedence(char);
 
-int	doOp(int, int, char, int *);
+int doOp(exprVal val1, exprVal val2, char op, exprVal* result);
 
 char	*instLookup(char *, instruction *(*), char *, int *);
 
@@ -166,9 +170,13 @@ int     optCRE();                               //ck
 
 char	*evalList(char *, unsigned short *, int *);
 
-int	initObj(char *);
+int	initObj(const char *);
+
+int	initBin(const char*);
 
 int	outputObj(int, int, int);
+
+int	outputBin(int, int, int);
 
 int	checkValue(int);
 
@@ -176,13 +184,15 @@ int     finishList();
 
 int	finishObj(void);
 
+int	finishBin(void);
+
 char	*opParse(char *, opDescriptor *, int *);
 
 symbolDef *lookup(char *, int, int *);
 
 int	hash(char *);
 
-symbolDef *define(char *, int, bool, bool, int *);
+symbolDef* define(char* sym, const exprVal& value, bool pass2, bool check, int* errorPtr);
 
 void clearSymbols();
 
@@ -200,3 +210,8 @@ int listOff(int, char *, char *, int *);
 
 int memory(int, char *, char *, int *);
 
+void SetBasePathForFile(const char* pFileName);
+
+void GetFilePath(const char* pFileName, char* pFullName);
+
+exprVal LocExpr();

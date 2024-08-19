@@ -93,7 +93,7 @@ int movem(int	size, char *label, char *op, int *errorPtr)
 		}
 	/* Define the label attached to this instruction */
 	if (*label)
-		define(label, loc, pass2, true, errorPtr);
+		define(label, LocExpr(), pass2, true, errorPtr);
 
 	/* See if the instruction is of the form MOVEM <reg_list>,<ea> */
 	status = OK;
@@ -222,7 +222,10 @@ int reg(int size, char *label, char *op, int *errorPtr)
 			}
 		else {
 			status = OK;
-			symbol = define(label, (int) regList, pass2, true, &status);
+			exprVal expr;
+			expr.value = (int)regList;
+			expr.isRelative = false;
+			symbol = define(label, expr, pass2, true, &status);
 			NEWERROR(*errorPtr, status);
 			if (status < ERRORN)
 				symbol->flags |= REG_LIST_SYM;
@@ -327,7 +330,7 @@ char *evalList(char *p, unsigned short *listPtr, int *errorPtr)
 			p++;
 		} while (isalnum(*p) || *p == '.' || *p == '_' || *p == '$');
 		/* Check for invalid syntax */
-		if (!isspace(*p) && *p != ',' && *p) {
+		if (!isspace((unsigned char)*p) && *p != ',' && *p) {
 			NEWERROR(*errorPtr, SYNTAX);
 			return NULL;
 			}
@@ -347,7 +350,7 @@ char *evalList(char *p, unsigned short *listPtr, int *errorPtr)
 				}
 			else {
 				if (symbol->flags & REG_LIST_SYM)
-					*listPtr = (unsigned short)symbol->value;
+					*listPtr = (unsigned short)symbol->value.value;
 				else {
 					NEWERROR(*errorPtr, NOT_REG_LIST);
 					*listPtr = 0x1234;

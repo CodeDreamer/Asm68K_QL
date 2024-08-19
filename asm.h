@@ -17,7 +17,8 @@
 #define asmH
 
 // Windows
-#ifdef _MSC_VER
+#ifdef _MSC_VER 
+//#define strncasecmp _strnicmp
 #define strcasecmp _stricmp
 #define unlink _unlink
 #endif
@@ -51,7 +52,7 @@ void REMOVECR(char *line);
 
 /* Define a couple of useful tests */
 
-#define isTerm(c)   (c == ',' || c == '/' || c == '-' || isspace(c) || !c || c == '{')
+#define isTerm(c)   (c == ',' || c == '/' || c == '-' || isspace((unsigned char)(c)) || !c || c == '{')
 #define isRegNum(c) ((c >= '0') && (c <= '7'))
 
 //extern const AnsiString VERSION =                     "5.15.04";  // don't forget to change version.txt on easy68k.com
@@ -97,6 +98,9 @@ void REMOVECR(char *line);
 #define REG_LIST_UNDEF       0x305
 #define INV_FORWARD_REF      0x306
 #define INV_LENGTH	         0x307
+#define INV_OP_TYPE_MIX      0x308
+#define INV_RELATIVE		 0x309
+#define INV_ABSOLUTE         0x30A
 #define MINOR		         0x200
 #define INV_SIZE_CODE	     0x201
 #define INV_QUICK_CONST      0x202
@@ -173,7 +177,7 @@ struct opDescriptor
   int  mode;	// Mode number (see below)
   int  data;	// IMMEDIATE value, displacement, or absolute address
   int  field;   // for bitField instructions
-  char reg;	// Principal register number (0-7)
+  char reg;		// Principal register number (0-7)
   char index;	// Index register number (0-7 = D0-D7, 8-15 = A0-A7)
   char size;	// Size of index register (WORD or LONG, see below)
                 // or forced size of IMMEDIATE instruction
@@ -182,10 +186,16 @@ struct opDescriptor
   bool backRef;	// True if data field is known on first pass
 };
 
+// Expression value, or partial value
+struct exprVal
+{
+	int value;
+	bool isRelative;
+};
 
 /* Structure for a symbol table entry */
 typedef struct symbolEntry {
-	int value;			/* 32-bit value of the symbol */
+	exprVal value;			/* 32-bit value of the symbol */
 	struct symbolEntry *next;	/* Pointer to next symbol in linked list */
 	char flags;			/* Flags (see below) */
 	char name[SIGCHARS+1];		/* Name */
@@ -218,7 +228,6 @@ typedef struct {
 			/* Routine to be called if parseFlag is FALSE */
 	} instruction;
 
-
 /* Addressing mode codes/bitmasks */
 #define DnDirect               0x00001
 #define AnDirect               0x00002
@@ -242,6 +251,7 @@ enum tabTypes{ Assembly, Fixed };
 
 extern bool listFlag;	       // True if a listing is desired
 extern bool objFlag;	       // True if an S-Record object code file is desired
+extern bool binFlag;	       // True if binary output is desired
 extern bool CEXflag;	       // True is Constants are to be EXpanded
 extern bool BITflag;           // True to assemble bitfield instructions
 extern bool CREflag;           // true adds symbol table to listing

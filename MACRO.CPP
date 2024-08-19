@@ -47,7 +47,6 @@ extern FILE *inFile;            // source file
 extern FILE *listFile;		// Listing file
 extern FILE *errFile;		// error message file
 extern FILE *tmpFile;
-extern bool listFlag;
 extern bool continuation;	// TRUE if the listing line is a continuation
 extern char pass;		// pass counter
 extern bool pass2;		// Flag set during second pass
@@ -90,7 +89,10 @@ int macro(int size, char *label, char *op, int *errorPtr)
   if (pass == 0)
     macroFP = ftell(tmpFile);           // save location of macro in tempFile
   // put macro and it's file pointer in symbol table
-  symbol = define(label, macroFP, pass2, true, &error);
+  exprVal expr;
+  expr.value = macroFP;
+  expr.isRelative = false;
+  symbol = define(label, expr, pass2, true, &error);
   if (error == MULTIPLE_DEFS) {         // ignore all errors except MULTIPLE_DEFS
     NEWERROR(*errorPtr, MULTIPLE_DEFS);
     return NORMAL;
@@ -139,7 +141,6 @@ int asmMacro(int size, char *label, char *arg, int *errorPtr)
   const int MAX_SIZE = 512;       // maximun size of input line
   char *token[MAXT];              // pointers to tokens
   char tokens[MAX_SIZE];          // place tokens here
-  char *tokenEnd[MAXT];           // where tokens end in source line
   int error, argN, i, n;
   int tempFP;                           // temporary File Pointer
   int value;
@@ -183,7 +184,7 @@ int asmMacro(int size, char *label, char *arg, int *errorPtr)
 
   // Define the label attached to this macro call, if any
   if (*label)
-    define(label, loc, pass2, true, errorPtr);
+    define(label, LocExpr(), pass2, true, errorPtr);
 
   // parse macro call and put arguments into array
   strcap(capLine, arg);
@@ -194,7 +195,7 @@ int asmMacro(int size, char *label, char *arg, int *errorPtr)
   while (*capL) {                       // loop until out of arguments
     i = 0;
     textArg = false;
-    while ( *capL && ( (*capL != ',' && !(isspace(*capL)) ) || textArg )) {
+    while ( *capL && ( (*capL != ',' && !(isspace((unsigned char)*capL)) ) || textArg )) {
       if (*capL == '<') {               // if <         *ck 12-7-2005
         if (!textArg)                   // if not text mode
           textArg = true;               // set text mode flag
@@ -370,7 +371,9 @@ int asmMacro(int size, char *label, char *arg, int *errorPtr)
       if (token[2] == empty) {                  // if IFARG argument missing
         NEWERROR(*errorPtr, INVALID_ARG);
       } else {
-        eval(token[2], &value, &backRef, &error);
+          exprVal expr;
+        eval(token[2], &expr, &backRef, &error);
+        value = expr.value;
         //value--;
         if (error < ERRORN && value > 0 && value < MAX_ARGS) { // if valid arg number
           if (arguments[value][0] == '\0') { // if argument does not exist

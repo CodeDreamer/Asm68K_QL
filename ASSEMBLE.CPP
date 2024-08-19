@@ -110,8 +110,6 @@ extern FILE *errFile;		// error message file
 extern FILE *tmpFile;           // temp file
 
 extern int labelNum;            // macro label \@ number
-extern bool listFlag;           // True if a listing is desired
-extern bool objFlag;	        // True if an object code file is desired
 extern bool xrefFlag;	        // True if a cross-reference is desired
 extern bool CEXflag;	        // True is Constants are to be EXpanded
 extern bool BITflag;            // True to assemble bitfield instructions
@@ -150,6 +148,7 @@ extern bool mapROM;             // memory map flags
 extern bool mapRead;
 extern bool mapProtected;
 extern bool mapInvalid;
+extern bool isRelative;
 
 // RA extern stack<int,vector<int> > stcStack;
 extern std::stack<int> stcStack;
@@ -223,12 +222,24 @@ int assembleFile(char fileName[], char tempName[], AnsiString workName)
     // if Object file flag then create .S68 file (S-Record)
     if (objFlag) {
       outName = ChangeFileExt(workName, ".S68");
-      if(initObj((char *)outName.c_str()) != NORMAL)  // RA   // if error initializing object file
+      if(initObj(outName.c_str()) != NORMAL)  // RA   // if error initializing object file
         objFlag = false;                        // disable object file creation
     }
 
+    // if binary file flag then create .bin file
+    if (objFlag) {
+        outName = ChangeFileExt(workName, ".bin");
+        if (initBin(outName.c_str()) != NORMAL)  // RA   // if error initializing binary file
+            binFlag = false;                        // disable object file creation
+    }
+
+    SetBasePathForFile(fileName);
+
     // Assemble the file
     processFile();
+
+    // flush any pending space at end of file (e.g. DS.B)
+    output(0, 0);
 
     // Close files and print error and warning counts
     fclose(inFile);
@@ -236,6 +247,8 @@ int assembleFile(char fileName[], char tempName[], AnsiString workName)
     finishList();
     if (objFlag)
       finishObj();
+    if (binFlag)
+      finishBin();
 
     clearSymbols();               //ck clear symbol table memory
 
@@ -319,9 +332,6 @@ char *skipSpace(char *p)
 int processFile()
 {
   int error;
-  bool comment;                 // true when line is comment
-  int value;
-  bool backRef;
 
   try {
     offsetMode = false;         // clear flags
@@ -355,6 +365,7 @@ int processFile()
       lineNum = 1;
       lineNumL68 = 1;
       endFlag = false;
+      isRelative = true;
       errorCount = warningCount = 0;
       skipCond = false;             // true conditionally skips lines in code
       while(!endFlag && fgets(line, 256, inFile)) {
@@ -400,7 +411,8 @@ int processFile()
 // Conditionally Assemble one line of code
 int assemble(char *line, int *errorPtr)
 {
-  int value = 0;
+  exprVal value;
+  value.value = 0;
   bool backRef = false;
   int error2Ptr = 0;
   char capLine[256];
@@ -408,6 +420,7 @@ int assemble(char *line, int *errorPtr)
   bool comment;                   // true when line is comment
 
   try {
+      //printf("loc: %d\n", loc);
 
     if (pass2 && listFlag)
       listLoc();
@@ -487,7 +500,7 @@ int assemble(char *line, int *errorPtr)
           NEWERROR(*errorPtr, INVALID_ARG);
         } else {
           eval(token[2], &value, &backRef, &error2Ptr);
-          if (error2Ptr < ERRORN && value != 0) { // if not condition
+          if (error2Ptr < ERRORN && value.value != 0) { // if not condition
             skipCond = true;                    // conditionally skip lines
             nestLevel++;                        // nest level of skip
           }
@@ -506,7 +519,7 @@ int assemble(char *line, int *errorPtr)
           NEWERROR(*errorPtr, INVALID_ARG);
         } else {
           eval(token[2], &value, &backRef, &error2Ptr);
-          if (error2Ptr < ERRORN && value == 0) { // if not condition
+          if (error2Ptr < ERRORN && value.value == 0) { // if not condition
             skipCond = true;                    // skip lines in macro
             nestLevel++;                        // nest level of skip
           }
@@ -525,7 +538,7 @@ int assemble(char *line, int *errorPtr)
           NEWERROR(*errorPtr, INVALID_ARG);
         } else {
           eval(token[2], &value, &backRef, &error2Ptr);
-          if (error2Ptr < ERRORN && value >= 0) { // if not condition
+          if (error2Ptr < ERRORN && value.value >= 0) { // if not condition
             skipCond = true;                    // conditionally skip lines
             nestLevel++;                        // nest level of skip
           }
@@ -544,7 +557,7 @@ int assemble(char *line, int *errorPtr)
           NEWERROR(*errorPtr, INVALID_ARG);
         } else {
           eval(token[2], &value, &backRef, &error2Ptr);
-          if (error2Ptr < ERRORN && value > 0) { // if not condition
+          if (error2Ptr < ERRORN && value.value > 0) { // if not condition
             skipCond = true;                    // conditionally skip lines
             nestLevel++;                        // nest level of skip
           }
@@ -563,7 +576,7 @@ int assemble(char *line, int *errorPtr)
           NEWERROR(*errorPtr, INVALID_ARG);
         } else {
           eval(token[2], &value, &backRef, &error2Ptr);
-          if (error2Ptr < ERRORN && value <= 0) { // if not condition
+          if (error2Ptr < ERRORN && value.value <= 0) { // if not condition
             skipCond = true;                    // conditionally skip lines
             nestLevel++;                        // nest level of skip
           }
@@ -582,7 +595,7 @@ int assemble(char *line, int *errorPtr)
           NEWERROR(*errorPtr, INVALID_ARG);
         } else {
           eval(token[2], &value, &backRef, &error2Ptr);
-          if (error2Ptr < ERRORN && value < 0) {  // if not condition
+          if (error2Ptr < ERRORN && value.value < 0) {  // if not condition
             skipCond = true;                    // conditionally skip lines
             nestLevel++;                        // nest level of skip
           }
@@ -631,6 +644,14 @@ int assemble(char *line, int *errorPtr)
   return NORMAL;
 }
 
+exprVal LocExpr()
+{
+    exprVal expr;
+    expr.value = loc;
+    expr.isRelative = isRelative;
+    return expr;
+}
+
 // create machine code for instruction
 int createCode(char *capLine, int *errorPtr) {
   instruction *tablePtr;
@@ -658,12 +679,12 @@ int createCode(char *capLine, int *errorPtr) {
 
     // if next character is space AND the label was at the start of the line
     // OR the label ends with ':'
-    if ((isspace(*p) && start == capLine) || *p == ':') {
+    if ((isspace((unsigned char)*p) && start == capLine) || *p == ':') {
       if (*p == ':')            // if label ends with :
         p++;                    // skip it
       p = skipSpace(p);         // skip trailing spaces
       if (*p == '*' || *p == ';' || !*p) {   // if the next char is '*' or ';' or end of line
-        define(label, loc, pass2, true, errorPtr);  // add label to list of labels
+        define(label, LocExpr(), pass2, true, errorPtr);  // add label to list of labels
         return NORMAL;
       }
     } else {
@@ -682,7 +703,7 @@ int createCode(char *capLine, int *errorPtr) {
         listLoc();
       }
       if (*label)
-        define(label, loc, pass2, true, errorPtr);
+        define(label, LocExpr(), pass2, true, errorPtr);
       if (*errorPtr > SEVERE)
         return NORMAL;
       sourceParsed = destParsed = false;
@@ -728,7 +749,7 @@ int createCode(char *capLine, int *errorPtr) {
               return NORMAL;
           }
 
-          if (!isspace(*p) && *p) {     // if next character is not whitespace
+          if (!isspace((unsigned char)*p) && *p) {     // if next character is not whitespace
             NEWERROR(*errorPtr, SYNTAX);
             return NORMAL;
           }
@@ -742,7 +763,7 @@ int createCode(char *capLine, int *errorPtr) {
           return NORMAL;
         }
         else if ((source.mode & flavorPtr->source) && !flavorPtr->dest) {
-          if (*p!='{' && !isspace(*p) && *p) {
+          if (*p!='{' && !isspace((unsigned char)*p) && *p) {
             NEWERROR(*errorPtr, SYNTAX);
             return NORMAL;
           }
@@ -776,7 +797,7 @@ int createCode(char *capLine, int *errorPtr) {
 // parse {offset:width}
 char *fieldParse(char *p, opDescriptor *d, int *errorPtr)
 {
-  int offset, width;
+  exprVal offset, width;
   bool backRef;
 
   d->field = 0;
@@ -797,17 +818,17 @@ char *fieldParse(char *p, opDescriptor *d, int *errorPtr)
     if (p[0] == '#')
       p++;                      // skip '#'
     p = eval(p, &offset, &backRef, errorPtr);   // read offset number
-    if (*errorPtr > SEVERE) {
+    if (*errorPtr > SEVERE || offset.isRelative) {
       NEWERROR(*errorPtr, BAD_BITFIELD);
       return p;
     }
     if (!backRef)
       NEWERROR(*errorPtr, INV_FORWARD_REF);
-    if (offset < 0 || offset > 31) {
+    if (offset.value < 0 || offset.value > 31) {
       NEWERROR(*errorPtr, BAD_BITFIELD);
       return p;
     }
-    d->field |= offset << 6;    // put offset in bits[10:6]
+    d->field |= offset.value << 6;    // put offset in bits[10:6]
   }
   p = skipSpace(p);
 
@@ -827,19 +848,19 @@ char *fieldParse(char *p, opDescriptor *d, int *errorPtr)
     if (p[0] == '#')
       p++;                      // skip '#'
     p = eval(p, &width, &backRef, errorPtr);   // read width number
-    if (*errorPtr > SEVERE) {
+    if (*errorPtr > SEVERE || width.isRelative) {
       NEWERROR(*errorPtr, BAD_BITFIELD);
       return p;
     }
     if (!backRef)
       NEWERROR(*errorPtr, INV_FORWARD_REF);
-    if (width < 1 || width > 32) {
+    if (width.value < 1 || width.value > 32) {
       NEWERROR(*errorPtr, BAD_BITFIELD);
       return p;
     }
-    if (width == 32)            // 0 specifies a field width of 32
-      width = 0;
-    d->field |= width;          // put width in bits[4:0]
+    if (width.value == 32)            // 0 specifies a field width of 32
+      width.value = 0;
+    d->field |= width.value;          // put width in bits[4:0]
   }
   if (*p != '}') {
     NEWERROR(*errorPtr, BAD_BITFIELD);
@@ -894,7 +915,7 @@ int tokenize(char* instr, char* delim, char *token[], char* tokens){
   }
 
   start = instr;
-  while(*instr && isspace(*instr))              // skip leading spaces
+  while(*instr && isspace((unsigned char)*instr))              // skip leading spaces
     instr++;
   if (*instr != '*' && *instr != ';') {         // if not comment line
     if (start != instr)                         // if no label
@@ -904,7 +925,7 @@ int tokenize(char* instr, char* delim, char *token[], char* tokens){
       parenCount = 0;
       token[tokN] = &tokens[size];              // pointer to token
       //while (*instr && strchr(delim, *instr))   // skip leading delimiters
-      while(*instr && isspace(*instr))              // skip leading spaces
+      while(*instr && isspace((unsigned char)*instr))              // skip leading spaces
         instr++;
       if (*instr == '\'' && *(instr+1) == '\'') { // if argument starts with '' (NULL)
         tokens[size++] = '\0';
@@ -934,7 +955,7 @@ int tokenize(char* instr, char* delim, char *token[], char* tokens){
       tokCount++;                               // count tokens
       tokN++;                                   // next token index
       //while (*instr && strchr(delim, *instr))       // skip trailing delimiters
-      while (*instr && isspace(*instr))         // skip trailing spaces *ck 12-10-2005
+      while (*instr && isspace((unsigned char)*instr))         // skip trailing spaces *ck 12-10-2005
         instr++;
     }
   }
@@ -973,6 +994,7 @@ int main(int argc, char *argv[])
 
   listFlag = true;           // True if a listing is desired
   objFlag  = true;           // True if an S-Record object code file is desired
+  binFlag  = true;
   CEXflag  = false;          // True is Constants are to be EXpanded
   BITflag  = true;           // True to assemble bitfield instructions
   CREflag  = true;           // true adds symbol table to listing

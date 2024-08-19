@@ -46,8 +46,9 @@ extern int locOffset;
 extern int sectionLoc[16];     // section locations
 extern int  sectI;              // current section
 extern bool offsetMode, showEqual;
+extern bool isRelative;
 
-extern bool pass2, endFlag, listFlag;
+extern bool pass2, endFlag;
 
 extern char *listPtr;	/* Pointer to buffer where listing line is assembled
 			   (Used to put =XXXXXXXX in the listing for EQU's and SET's */
@@ -60,7 +61,6 @@ extern bool SEXflag;    // true expands structured code
 extern bool WARflag;    // true displays warnings
 extern bool CEXflag;    // true expands constants
 extern bool BITflag;    // True to assemble bitfield instructions
-extern bool objFlag;	// True if an object code file is desired
 extern int includeNestLevel;    // count nested include directives
 extern char includeFile[256];  // name of current include file
 
@@ -72,6 +72,7 @@ extern FILE *listFile;		// Listing file
 extern bool continuation;	// TRUE if the listing line is a continuation
 extern bool skipList;           // true to skip listing line in ASSEMBLE.CPP
 extern bool printCond;          // true to print condition on listing line
+extern int execDataSize;
 
 extern bool mapROM;
 extern int mapROMStart, mapROMEnd;
@@ -86,44 +87,48 @@ extern int mapInvalidStart, mapInvalidEnd;
  *	ORG directive.
  ***********************************************************************/
 
-int org(int size, char *label, char *op, int *errorPtr)
+int org(int size, char* label, char* op, int* errorPtr)
 {
-  int newLoc;
-  bool backRef;
+	exprVal newLoc;
+	bool backRef;
 
-  if (size)
-    NEWERROR(*errorPtr, INV_SIZE_CODE);
-  if (!*op) {
-    NEWERROR(*errorPtr, SYNTAX);
-    return NORMAL;
-  }
-  if (offsetMode) {
-    loc = locOffset;            // restore loc used prior to Offset directive
-    offsetMode = false;         // turn off offset mode
-  }
+	isRelative = false;
+	if (size)
+		NEWERROR(*errorPtr, INV_SIZE_CODE);
+	if (!*op) {
+		NEWERROR(*errorPtr, SYNTAX);
+		return NORMAL;
+	}
+	if (offsetMode) {
+		loc = locOffset;            // restore loc used prior to Offset directive
+		offsetMode = false;         // turn off offset mode
+	}
 
-  op = eval(op, &newLoc, &backRef, errorPtr);
-  if (*errorPtr < SEVERE && !backRef) {
-    NEWERROR(*errorPtr, INV_FORWARD_REF);
-  }
-  else if (*errorPtr < ERRORN) {
-    if (isspace(*op) || !*op) {
-      // Check for an odd value, adjust to one higher
-      if (newLoc & 1) {
-	NEWERROR(*errorPtr, ODD_ADDRESS);
-	newLoc++;
-      }
-      loc = newLoc;
-      // Define the label attached to this directive, if any
-      if (*label)
-	define(label, loc, pass2, true, errorPtr);
-      // Show new location counter on listing
-      listLoc();
-    }
-    else
-      NEWERROR(*errorPtr, SYNTAX);
-  }
-  return NORMAL;
+	op = eval(op, &newLoc, &backRef, errorPtr);
+	if (*errorPtr < SEVERE && newLoc.isRelative) {
+		NEWERROR(*errorPtr, INV_RELATIVE);
+	}
+	else if (*errorPtr < SEVERE && !backRef) {
+		NEWERROR(*errorPtr, INV_FORWARD_REF);
+	}
+	else if (*errorPtr < ERRORN) {
+		if (isspace((unsigned char)*op) || !*op) {
+			// Check for an odd value, adjust to one higher
+			if (newLoc.value & 1) {
+				NEWERROR(*errorPtr, ODD_ADDRESS);
+				newLoc.value++;
+			}
+			loc = newLoc.value;
+			// Define the label attached to this directive, if any
+			if (*label)
+				define(label, LocExpr(), pass2, true, errorPtr);
+			// Show new location counter on listing
+			listLoc();
+		}
+		else
+			NEWERROR(*errorPtr, SYNTAX);
+	}
+	return NORMAL;
 }
 
 /***********************************************************************
@@ -131,8 +136,7 @@ int org(int size, char *label, char *op, int *errorPtr)
  ***********************************************************************/
 int section(int size, char *label, char *op, int *errorPtr)
 {
-  int value;
-  int newLoc;
+  exprVal value;
   bool backRef = true;
 
   if (size)
@@ -144,17 +148,20 @@ int section(int size, char *label, char *op, int *errorPtr)
   }
   if (*op) {                    // if section number
     eval(op, &value, &backRef, errorPtr);    // evaluate section number
-    if (*errorPtr < SEVERE && !backRef) {
+    if (*errorPtr < SEVERE && value.isRelative) {
+        NEWERROR(*errorPtr, INV_RELATIVE);
+    }
+    else if (*errorPtr < SEVERE && !backRef) {
       NEWERROR(*errorPtr, INV_FORWARD_REF);
     }
     else if (*errorPtr < ERRORN) {
-      if (value < 0 || value > 15) {              // if illegal section number
+      if (value.value < 0 || value.value > 15) {              // if illegal section number
         NEWERROR(*errorPtr, SYNTAX);
         return NORMAL;
       }
       sectionLoc[sectI] = loc;            // save current loc to current section
-      loc = sectionLoc[value];            // set loc to new section
-      sectI = value;                      // new section number
+      loc = sectionLoc[value.value];            // set loc to new section
+      sectI = value.value;                      // new section number
       // Show new location counter on listing
       listLoc();
     } else {
@@ -162,8 +169,11 @@ int section(int size, char *label, char *op, int *errorPtr)
     }
   } else if (!*label)           // else no section number if no label
     NEWERROR(*errorPtr, LABEL_REQUIRED);
-  if (*label)                 // if label
-    define(label, sectI, pass2, true, errorPtr);  // define to sectI
+  if (*label) {                // if label
+      value.value = sectI;
+      value.isRelative = false;
+      define(label, value, pass2, true, errorPtr);  // define to sectI
+  }
   return NORMAL;
 }
 
@@ -172,7 +182,7 @@ int section(int size, char *label, char *op, int *errorPtr)
  ***********************************************************************/
 int offset(int size, char *label, char *op, int *errorPtr)
 {
-  int newLoc;
+  exprVal newLoc;
   bool backRef;
 
   if (size)
@@ -185,16 +195,19 @@ int offset(int size, char *label, char *op, int *errorPtr)
     NEWERROR(*errorPtr, LABEL_ERROR);
 
   op = eval(op, &newLoc, &backRef, errorPtr);
-  if (*errorPtr < SEVERE && !backRef) {
+  if (*errorPtr < SEVERE && newLoc.isRelative) {
+      NEWERROR(*errorPtr, INV_RELATIVE);
+  }
+  else if (*errorPtr < SEVERE && !backRef) {
     NEWERROR(*errorPtr, INV_FORWARD_REF);
   }
   else if (*errorPtr < ERRORN) {
-    if (isspace(*op) || !*op) {
+    if (isspace((unsigned char)*op) || !*op) {
       if (!offsetMode) {     // if not currently processing an Offset directive
         locOffset = loc;        // save current location
         offsetMode = true;
       }
-      loc = newLoc;
+      loc = newLoc.value;
       // Show new location counter on listing
       listLoc();
     }
@@ -209,11 +222,11 @@ int offset(int size, char *label, char *op, int *errorPtr)
  ***********************************************************************/
  // modified by CK
  // Allows starting address to be specified as operand for compatibility
- // with Teeside emulator. Defaults to starting address of $1000.
+ // with Teeside emulator. Defaults to starting address of $0.
 
 int funct_end(int size, char *label, char *op, int *errorPtr)
 {
-  int newLoc;
+  exprVal newLoc;
   bool backRef;
 
   if (size)
@@ -221,25 +234,28 @@ int funct_end(int size, char *label, char *op, int *errorPtr)
   endFlag = true;
 
   if (!*op) {                   // if no address specified
-    startAddress = 0x1000;      // assume starting address of $1000
-    NEWERROR(*errorPtr, ADDRESS_MISSING);
+    startAddress = 0;      // assume starting address of 0
+    //NEWERROR(*errorPtr, ADDRESS_MISSING);
     return NORMAL;
   }
   if (*label)                           // if label
     NEWERROR(*errorPtr, LABEL_ERROR);
 
   op = eval(op, &newLoc, &backRef, errorPtr);
-  if (*errorPtr < SEVERE && !backRef) {
+  if (*errorPtr < SEVERE && newLoc.isRelative) {
+      NEWERROR(*errorPtr, INV_RELATIVE);
+  }
+  else if (*errorPtr < SEVERE && !backRef) {
     NEWERROR(*errorPtr, INV_FORWARD_REF);
   }
   else if (*errorPtr < ERRORN) {
-    if (isspace(*op) || !*op) {
+    if (isspace((unsigned char)*op) || !*op) {
       /* Check for an odd value, adjust to one higher */
-      if (newLoc & 1) {
+      if (newLoc.value & 1) {
 	NEWERROR(*errorPtr, ODD_ADDRESS);
-	newLoc++;
+	newLoc.value++;
       }
-      startAddress = newLoc;
+      startAddress = newLoc.value;
     }
     else
       NEWERROR(*errorPtr, SYNTAX);
@@ -253,38 +269,41 @@ int funct_end(int size, char *label, char *op, int *errorPtr)
  *	EQU directive.
  ***********************************************************************/
 
-int equ(int size, char *label, char *op, int *errorPtr)
+int equ(int size, char* label, char* op, int* errorPtr)
 {
-  int value;
-  bool backRef;
-  char *op1;
+	exprVal value;
+	bool backRef;
 
-  if (size)
-    NEWERROR(*errorPtr, INV_SIZE_CODE);
-  if (!*op) {
-    NEWERROR(*errorPtr, SYNTAX);
-    return NORMAL;
-  }
-
-  op = eval(op, &value, &backRef, errorPtr);
-  if (*errorPtr < SEVERE && !backRef) {
-    NEWERROR(*errorPtr, INV_FORWARD_REF);
-  }
-  else if (*errorPtr < ERRORN)
-    if (isspace(*op) || !*op)
-      if (!*label) {
-	NEWERROR(*errorPtr, LABEL_REQUIRED);
-      }	else {
-	define(label, value, pass2, true, errorPtr);
-	if (pass2 && listFlag && *errorPtr < MINOR) {
-	  sprintf(listPtr, "=%08X ", value); // RA suppress warning on modern 64 bit machines
-	  listPtr += 10;
+	if (size)
+		NEWERROR(*errorPtr, INV_SIZE_CODE);
+	if (!*op) {
+		NEWERROR(*errorPtr, SYNTAX);
+		return NORMAL;
 	}
-      }
-    else
-      NEWERROR(*errorPtr, SYNTAX);
 
-  return NORMAL;
+	op = eval(op, &value, &backRef, errorPtr);
+    if (*errorPtr < SEVERE && value.isRelative) {
+        NEWERROR(*errorPtr, INV_RELATIVE);
+    }
+	else if (*errorPtr < SEVERE && !backRef) {
+		NEWERROR(*errorPtr, INV_FORWARD_REF);
+	}
+	else if (*errorPtr < ERRORN)
+		if (isspace((unsigned char)*op) || !*op)
+			if (!*label) {
+				NEWERROR(*errorPtr, LABEL_REQUIRED);
+			}
+			else {
+				define(label, value, pass2, true, errorPtr);
+				if (pass2 && listFlag && *errorPtr < MINOR) {
+					sprintf(listPtr, "=%08X ", value.value); // RA suppress warning on modern 64 bit machines
+					listPtr += 10;
+				}
+			}
+		else
+			NEWERROR(*errorPtr, SYNTAX);
+
+	return NORMAL;
 }
 
 
@@ -294,7 +313,7 @@ int equ(int size, char *label, char *op, int *errorPtr)
 
 int set(int size, char *label, char *op, int *errorPtr)
 {
-  int value;
+  exprVal value;
   int  error;
   bool backRef;
   symbolDef *symbol;
@@ -312,15 +331,15 @@ int set(int size, char *label, char *op, int *errorPtr)
 //  }
 //  else
    if (*errorPtr < ERRORN)          // ck 4-18-03
-    if (isspace(*op) || !*op)
+    if (isspace((unsigned char)*op) || !*op)
       if (!*label) {
 	NEWERROR(*errorPtr, LABEL_REQUIRED);
       } else {
 	error = OK;
 	symbol = define(label, value, pass2, false, &error);   // ck 4-18-03
 	symbol->flags |= REDEFINABLE;
-	if (pass2 & listFlag) {
-	  sprintf(listPtr, "=%08X ", value); // supress size warning on 64 bit machines
+	if (pass2 && listFlag) {
+	  sprintf(listPtr, "=%08X ", value.value); // supress size warning on 64 bit machines
 	  listPtr += 10;
 	}
       }
@@ -335,83 +354,90 @@ int set(int size, char *label, char *op, int *errorPtr)
  *	DC directive.
  ***********************************************************************/
 
-int dc(int size, char *label, char *op, int *errorPtr)
+int dc(int size, char* label, char* op, int* errorPtr)
 {
-  int	outVal;
-  bool backRef;
-  char string[260], *p;
+	int	outVal;
+	exprVal exprVal;
+	bool backRef;
+	char string[260], * p;
 
-  if (size == SHORT_SIZE) {
-    NEWERROR(*errorPtr, INV_SIZE_CODE);
-    size = WORD_SIZE;
-  }
-  else if (!size)
-    size = WORD_SIZE;
-
-  // Move location counter to a word boundary and fix the listing if doing
-  // DC.W or DC.L (but not if doing DC.B, so DC.B's can be contiguous)
-  if ((size & (WORD_SIZE | LONG_SIZE)) && (loc & 1)) {
-    loc++;
-  }
-  showEqual = true;
-  listLoc();
-  showEqual = false;
-  // Define the label attached to this directive, if any
-  if (*label)
-    define(label, loc, pass2, true, errorPtr);
-  // Check for the presence of the operand list
-  if (!*op) {
-    NEWERROR(*errorPtr, SYNTAX);
-    return NORMAL;
-  }
-  do {
-    p = op;                             // save location of op
-    if (*op == '\'') {                  // if string
-      op = collect(++op, string);       // copy to string
-      if (!isspace(*op) && *op != ',') { // if stuff after string
-        op = p;                         // restore op
-        goto notString;                 // ***** GOTO *****
-      }
-      p = string;
-      while (*p) {
-	outVal = *p++;
-	if (size > BYTE_SIZE)
-	  outVal = (outVal << 8) + *p++;
-	if (size > WORD_SIZE) {
-	  outVal = (outVal << 16) + (*p++ << 8);
-	  outVal += *p++;
+	if (size == SHORT_SIZE) {
+		NEWERROR(*errorPtr, INV_SIZE_CODE);
+		size = WORD_SIZE;
 	}
-	if (pass2)
-	  output(outVal, size);
-	loc += size;
-      }
-    } else {
+	else if (!size)
+		size = WORD_SIZE;
+
+	// Move location counter to a word boundary and fix the listing if doing
+	// DC.W or DC.L (but not if doing DC.B, so DC.B's can be contiguous)
+	if ((size & (WORD_SIZE | LONG_SIZE)) && (loc & 1)) {
+		loc++;
+	}
+	showEqual = true;
+	listLoc();
+	showEqual = false;
+	// Define the label attached to this directive, if any
+	if (*label)
+		define(label, LocExpr(), pass2, true, errorPtr);
+	// Check for the presence of the operand list
+	if (!*op) {
+		NEWERROR(*errorPtr, SYNTAX);
+		return NORMAL;
+	}
+	do {
+		p = op;                             // save location of op
+		if (*op == '\'') {                  // if string
+			op = collect(++op, string);       // copy to string
+			if (!isspace((unsigned char)*op) && *op != ',') { // if stuff after string
+				op = p;                         // restore op
+				goto notString;                 // ***** GOTO *****
+			}
+			p = string;
+			while (*p) {
+				outVal = *p++;
+				if (size > BYTE_SIZE)
+					outVal = (outVal << 8) + *p++;
+				if (size > WORD_SIZE) {
+					outVal = (outVal << 16) + (*p++ << 8);
+					outVal += *p++;
+				}
+				if (pass2)
+					output(outVal, size);
+				loc += size;
+			}
+		}
+		else {
 
 notString:                              // process non strings
-      op = skipSpace(op);               // skip spaces
-      op = eval(op, &outVal, &backRef, errorPtr);
-      if (*errorPtr > SEVERE)
-	return NORMAL;
-      //if (!isspace(*op) && *op != ',') {
-      //	NEWERROR(*errorPtr, SYNTAX);
-      //	return NORMAL;
-      //}
-      if (pass2)
-	output(outVal, size);
-      loc += size;
-      if (size == BYTE_SIZE && (outVal < -128 || outVal > 255)) {
-	NEWERROR(*errorPtr, INV_8_BIT_DATA);
-      }
-      else if (size == WORD_SIZE && (outVal < -32768 || outVal > 65535))
-	NEWERROR(*errorPtr, INV_16_BIT_DATA);
-    }
-    op = skipSpace(op);               // skip spaces
-  } while (*op++ == ',');
-//  --op;
-//  if (!isspace(*op) && *op)
-//    NEWERROR(*errorPtr, SYNTAX);
+			op = skipSpace(op);               // skip spaces
+			op = eval(op, &exprVal, &backRef, errorPtr);
+			outVal = exprVal.value;
+			if (*errorPtr > SEVERE)
+				return NORMAL;
+			//if (!isspace((unsigned char)*op) && *op != ',') {
+			//	NEWERROR(*errorPtr, SYNTAX);
+			//	return NORMAL;
+			//}
+            if (pass2) {
+                if (exprVal.isRelative) {
+                    NEWERROR(*errorPtr, INV_RELATIVE);
+                }
+                else if (size == BYTE_SIZE && (outVal < -128 || outVal > 255)) {
+                    NEWERROR(*errorPtr, INV_8_BIT_DATA);
+                }
+                else if (size == WORD_SIZE && (outVal < -32768 || outVal > 65535))
+                    NEWERROR(*errorPtr, INV_16_BIT_DATA);
+                output(outVal, size);
+            }
+			loc += size;
+		}
+		op = skipSpace(op);               // skip spaces
+	} while (*op++ == ',');
+	//  --op;
+	//  if (!isspace((unsigned char)*op) && *op)
+	//    NEWERROR(*errorPtr, SYNTAX);
 
-  return NORMAL;
+	return NORMAL;
 }
 
 /**********************************************************************
@@ -446,7 +472,8 @@ char *collect(char *s, char *d)
 
 int dcb(int size, char *label, char *op, int *errorPtr)
 {
-  int	blockSize, blockVal, i;
+    exprVal	blockSize, blockVal;
+  int i;
   bool backRef;
 
   if (size == SHORT_SIZE) {
@@ -468,7 +495,7 @@ int dcb(int size, char *label, char *op, int *errorPtr)
 
   // Define the label attached to this directive, if any
   if (*label)
-    define(label, loc, pass2, true, errorPtr);
+    define(label, LocExpr(), pass2, true, errorPtr);
   // Evaluate the size of the block (in bytes, words, or longwords)
   op = eval(op, &blockSize, &backRef, errorPtr);
 
@@ -482,14 +509,14 @@ int dcb(int size, char *label, char *op, int *errorPtr)
     NEWERROR(*errorPtr, SYNTAX);
     return NORMAL;
   }
-  if (blockSize < 0 || ((loc + (blockSize * size)) > MEM_SIZE)) {
+  if (blockSize.value < 0 || ((loc + (blockSize.value * size)) > MEM_SIZE)) {
     NEWERROR(*errorPtr, INV_LENGTH);
     return NORMAL;
   }
   // Evaluate the data to put in block
   op = eval(++op, &blockVal, &backRef, errorPtr);
   if (*errorPtr < SEVERE) {
-    if (!isspace(*op) && *op) {
+    if (!isspace((unsigned char)*op) && *op) {
       NEWERROR(*errorPtr, SYNTAX);
       return NORMAL;
     }
@@ -497,13 +524,13 @@ int dcb(int size, char *label, char *op, int *errorPtr)
     if (pass2) {
       bool CEXsave = CEXflag;
       CEXflag = false;          // prevent display of all DCB data
-      for (i = 0; i < blockSize; i++) {
-        output(blockVal, size);
+      for (i = 0; i < blockSize.value; i++) {
+        output(blockVal.value, size);
 	loc += size;
       }
       CEXflag = CEXsave;
     }else
-      loc += blockSize * size;
+      loc += blockSize.value * size;
   }
 
   return NORMAL;
@@ -516,7 +543,7 @@ int dcb(int size, char *label, char *op, int *errorPtr)
 
 int ds(int size, char *label, char *op, int *errorPtr)
 {
-  int	blockSize;
+  exprVal	blockSize;
   bool	backRef;
 
   if (size == SHORT_SIZE) {
@@ -535,24 +562,28 @@ int ds(int size, char *label, char *op, int *errorPtr)
 
   // Define the label attached to this directive, if any
   if (*label)
-    define(label, loc, pass2, true, errorPtr);
+    define(label, LocExpr(), pass2, true, errorPtr);
   // Evaluate the size of the block (in bytes, words, or longwords)
   op = eval(op, &blockSize, &backRef, errorPtr);
-  if (*errorPtr < SEVERE && !backRef) {
+  if (*errorPtr < SEVERE && blockSize.isRelative) {
+      NEWERROR(*errorPtr, INV_RELATIVE);
+      return NORMAL;
+  }
+  else if (*errorPtr < SEVERE && !backRef) {
     NEWERROR(*errorPtr, INV_FORWARD_REF);
     return NORMAL;
   }
   if (*errorPtr > SEVERE)
     return NORMAL;
-  if (!isspace(*op) && *op) {
+  if (!isspace((unsigned char)*op) && *op) {
     NEWERROR(*errorPtr, SYNTAX);
     return NORMAL;
   }
-  if (blockSize < 0) {
+  if (blockSize.value < 0) {
     NEWERROR(*errorPtr, INV_LENGTH);
     return NORMAL;
   }
-  loc += blockSize * size;
+  loc += blockSize.value * size;
 
   return NORMAL;
 }
@@ -638,17 +669,12 @@ int opt(int size, char *label, char *op, int *errorPtr)
 // }
 int include(int size, char *label, char *fileName, int *errorPtr)
 {
-  char incLine[256], capLine[256];
+  char capLine[256];
   char *src, *dst;
-  int error, i;
-  int tempFP;                          // temporary File Pointer
-  bool comment;                         // true when line is comment
-  int value;
-  bool backRef;
+  int error;
   FILE *incFile;
   FILE *tmpInFile;                      // save current file
   char quote;
-  int lineNumInc;                       // line number for include file
   int lineNumSave;
   char fileNameSave[256];
 
@@ -664,7 +690,7 @@ int include(int size, char *label, char *fileName, int *errorPtr)
 
   // Define the label attached to this include directive, if any
   if (*label)
-    define(label, loc, pass2, true, errorPtr);
+    define(label, LocExpr(), pass2, true, errorPtr);
 
   //strcap(capLine, fileName); // RA do not uppercase the file name it breaks on linux
   strncpy(capLine,(const char *)fileName,256); // ^
@@ -688,7 +714,7 @@ int include(int size, char *label, char *fileName, int *errorPtr)
 
   // strip whitespace from end of filename
   dst--;
-  while (dst > capLine && isspace(*dst))
+  while (dst > capLine && isspace((unsigned char)*dst))
     dst--;
   dst++;
   *dst = '\0';
@@ -698,7 +724,9 @@ int include(int size, char *label, char *fileName, int *errorPtr)
   }
 
   try {
-    incFile = fopen(capLine, "r");     // attempt to open include file
+    char fullPath[256];
+    GetFilePath(capLine, fullPath);
+    incFile = fopen(fullPath, "r");     // attempt to open include file
     if (!incFile) {                    // if error opening file
       fprintf(stderr,"Could not open file ::%s::\n",capLine); // RA - looks like file names get uppercased which breaks on linux
       if (listFile!=NULL) 
@@ -710,7 +738,7 @@ int include(int size, char *label, char *fileName, int *errorPtr)
     tmpInFile = inFile;                 // save current input file
     inFile = incFile;                   // make include file input file
     strcpy(fileNameSave,includeFile);   // save current include file
-    strcpy(includeFile,capLine);        // save new include file
+    strcpy(includeFile,fullPath);        // save new include file
     lineNumSave = lineNum;              // save current line number
 
     // check to see if the included file is already open
@@ -789,7 +817,7 @@ int incbin(int size, char *label, char *fileName, int *errorPtr)
 
   // Define the label attached to this include directive, if any
   if (*label)
-    define(label, loc, pass2, true, errorPtr);
+    define(label, LocExpr(), pass2, true, errorPtr);
 
   strcap(capLine, fileName);
 
@@ -811,7 +839,7 @@ int incbin(int size, char *label, char *fileName, int *errorPtr)
 
   // strip whitespace from end of filename
   dst--;
-  while (dst > capLine && isspace(*dst))
+  while (dst > capLine && isspace((unsigned char)*dst))
     dst--;
   dst++;
   *dst = '\0';
@@ -821,7 +849,9 @@ int incbin(int size, char *label, char *fileName, int *errorPtr)
   }
 
   try {
-    incFile = fopen(capLine, "rb");    // attempt to open incbin binary file
+      char fullPath[256];
+      GetFilePath(capLine, fullPath);
+    incFile = fopen(fullPath, "rb");    // attempt to open incbin binary file
     if (!incFile) {                    // if ERROR opening file
       NEWERROR(*errorPtr, FILE_ERROR);     // error, invalid syntax
       return SEVERE;
@@ -835,6 +865,8 @@ int incbin(int size, char *label, char *fileName, int *errorPtr)
       if (pass2) {
         if (objFlag)
           outputObj(loc, dataByte, BYTE_SIZE);
+        if (binFlag)
+            outputBin(loc, dataByte, BYTE_SIZE);
       }
       loc++;            // increment location counter once for each byte in file
     }
@@ -867,7 +899,7 @@ int failError(int size, char *label, char *message, int *errorPtr)
 
   // Define the label attached to this include directive, if any
   if (*label)
-    define(label, loc, pass2, true, errorPtr);
+    define(label, LocExpr(), pass2, true, errorPtr);
 
   if (!*message)                                // if no message
     sprintf(buffer, "ERROR: Unspecified user defined error. \n");
@@ -957,7 +989,9 @@ int memory(int size, char *label, char *op, int *errorPtr)
   }
 
   // Evaluate the start address
-  op = eval(op, &startAddr, &backRef, errorPtr);
+  exprVal expr;
+  op = eval(op, &expr, &backRef, errorPtr);
+  startAddr = expr.value;
   if (*errorPtr < SEVERE && !backRef) {
     NEWERROR(*errorPtr, INV_FORWARD_REF);
     return NORMAL;
@@ -972,7 +1006,8 @@ int memory(int size, char *label, char *op, int *errorPtr)
   op++;                         // skip ','
   op = skipSpace(op);           // skip spaces
   // Evaluate the end address
-  eval(op, &endAddr, &backRef, errorPtr);
+  eval(op, &expr, &backRef, errorPtr);
+  endAddr = expr.value;
   if (*errorPtr < SEVERE && !backRef) {
     NEWERROR(*errorPtr, INV_FORWARD_REF);
     return NORMAL;
@@ -1017,7 +1052,7 @@ int simhalt(int size, char *label, char *op, int *errorPtr)
 
   // Define the label attached to this directive, if any
   if (*label)
-    define(label, loc, pass2, true, errorPtr);
+    define(label, LocExpr(), pass2, true, errorPtr);
 
   if (pass2) {
     //if (listFlag)       // if directive should be listed
@@ -1050,4 +1085,103 @@ int page(int size, char *label, char *op, int *errorPtr)
   }
 
   return NORMAL;
+}
+
+//**********************************************************************
+//	CNOP directive
+//  Aligns by adding NOPs
+//**********************************************************************
+int cnop(int size, char* label, char* op, int* errorPtr)
+{
+    exprVal	offset, alignment;
+    bool backRef;
+
+    if (*label)
+        define(label, LocExpr(), pass2, true, errorPtr);
+
+    // Evaluate the two 
+    op = eval(op, &offset, &backRef, errorPtr);
+    if (*errorPtr > SEVERE)
+        return NORMAL;
+    if (*op != ',') {
+        NEWERROR(*errorPtr, SYNTAX);
+        return NORMAL;
+    }
+
+    op = eval(++op, &alignment, &backRef, errorPtr);
+    if (*errorPtr > SEVERE)
+        return NORMAL;
+
+    if (!isspace((unsigned char)*op) && *op) {
+        NEWERROR(*errorPtr, SYNTAX);
+        return NORMAL;
+    }
+
+    if (offset.isRelative || alignment.isRelative) {
+        NEWERROR(*errorPtr, INV_RELATIVE);
+        return NORMAL;
+    }
+
+    if (offset.value >= alignment.value ||
+        offset.value < 0 ||
+        alignment.value <= 0) {
+        NEWERROR(*errorPtr, SYNTAX);
+        return NORMAL;
+    }
+
+    int newLoc = ((loc - offset.value + alignment.value - 1) / alignment.value) * alignment.value + offset.value;
+    if (newLoc > loc) {
+        // On pass 2, output the NOPs
+        if (pass2) {
+            if (loc & 1)
+                loc++;
+            bool CEXsave = CEXflag;
+            CEXflag = false;          // prevent display of all data
+            while (loc + 2 <= newLoc) {
+                output(0x4E71, WORD_SIZE);
+                loc += 2;
+            }
+            CEXflag = CEXsave;
+        }
+        loc = newLoc;
+    }
+
+    return NORMAL;
+}
+
+//**********************************************************************
+//	SIZE directive
+//  Sets data size for QDOS executable
+//**********************************************************************
+int dataSize(int size, char* label, char* op, int* errorPtr)
+{
+    exprVal	dataSize;
+    bool backRef;
+
+    if (*label)
+        define(label, LocExpr(), pass2, true, errorPtr);
+
+    // Evaluate the two 
+    op = eval(op, &dataSize, &backRef, errorPtr);
+    if (*errorPtr > SEVERE)
+        return NORMAL;
+ 
+    if (!isspace((unsigned char)*op) && *op) {
+        NEWERROR(*errorPtr, SYNTAX);
+        return NORMAL;
+    }
+
+    if (dataSize.isRelative) {
+        NEWERROR(*errorPtr, INV_RELATIVE);
+        return NORMAL;
+    }
+
+    if (dataSize.value < 0) {
+        NEWERROR(*errorPtr, INVALID_ARG);
+        return NORMAL;
+    }
+
+    execDataSize = dataSize.value;
+
+    return NORMAL;
 }

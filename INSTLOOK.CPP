@@ -71,10 +71,10 @@ char *instLookup(char *p, instruction *(*instPtrPtr), char *sizePtr, int *errorP
     } while (isalnum(*p) || *p == '_' || *p == '-');
     opcode[i] = '\0';
     if (*p == '.')
-      if (isspace(p[2]) || !p[2]) {
+      if (isspace((unsigned char)p[2]) || !p[2]) {
         if (p[1] == 'B')
           *sizePtr = BYTE_SIZE;
-        else if (p[1] == 'W' || isspace(p[1]))  // *ck 12-8-2005
+        else if (p[1] == 'W' || isspace((unsigned char)p[1]))  // *ck 12-8-2005
           *sizePtr = WORD_SIZE;
         else if (p[1] == 'L')
           *sizePtr = LONG_SIZE;
@@ -89,7 +89,7 @@ char *instLookup(char *p, instruction *(*instPtrPtr), char *sizePtr, int *errorP
         NEWERROR(*errorPtr, SYNTAX);
         return NULL;
       }
-    else if (!isspace(*p) && *p) {
+    else if (!isspace((unsigned char)*p) && *p) {
       NEWERROR(*errorPtr, SYNTAX);
       return NULL;
     }
@@ -129,7 +129,7 @@ char *instLookup(char *p, instruction *(*instPtrPtr), char *sizePtr, int *errorP
         if(pass2 && !(symbol->flags & BACKREF))  // if forward reference
           NEWERROR(*errorPtr, FORWARD_REF);     // warning
         *instPtrPtr = &asmMac;    // point to asmMac function description
-        macroFP = symbol->value;  // get file pointer to macro
+        macroFP = symbol->value.value;  // get file pointer to macro
         return p;                 // return pointer to macro parameters
       } else {
 

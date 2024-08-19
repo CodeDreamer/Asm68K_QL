@@ -61,16 +61,16 @@ extern int	loc;
 extern bool pass2;
 extern FILE *listFile;
 
-extern bool listFlag;	// True if a listing is desired
-extern bool objFlag;	// True if an object code file is desired
 extern char buffer[256];  //ck used to form messages for display in windows
 
 int output(int	data, int size)
 {
-  if (listFlag)
+  if (listFlag && size)
     listObj(data, size);
-  if (objFlag)
+  if (objFlag && size)
     outputObj(loc, data, size);
+  if (binFlag)
+    outputBin(loc, data, size);
   return NORMAL;
 }
 

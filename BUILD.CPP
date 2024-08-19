@@ -51,6 +51,7 @@
 
 extern int	loc;
 extern bool pass2;
+extern bool isRelative;
 
 
 /**********************************************************************
@@ -585,6 +586,8 @@ int branch(int mask, int size, opDescriptor *source, opDescriptor *dest,
       if (disp < -32768 || disp > 32767)
 	NEWERROR(*errorPtr, INV_BRANCH_DISP);
     }
+    if ((source->mode == PCDisp) != isRelative)
+        NEWERROR(*errorPtr, isRelative ? INV_ABSOLUTE : INV_RELATIVE);
   }
   else
     loc += (shortDisp) ? 2 : 4;
@@ -698,6 +701,8 @@ int dbcc(int mask, int size, opDescriptor *source, opDescriptor *dest,
     loc += 2;
     if (disp < -32768 || disp > 32767)
       NEWERROR(*errorPtr, INV_BRANCH_DISP);
+    if ((dest->mode == PCDisp) != isRelative)
+        NEWERROR(*errorPtr, isRelative ? INV_ABSOLUTE : INV_RELATIVE);
   }
   else
     loc += 4;

@@ -18,7 +18,6 @@
 #include <vector> // RA removed .h
 
 extern char line[256];		// Source line
-extern bool listFlag;
 extern bool pass2;		// Flag set during second pass
 extern int loc;		// The assembler's location counter
 extern unsigned int stcLabelI;  // structured if label number
@@ -290,15 +289,12 @@ int asmStructure(int size, char *label, char *arg, int *errorPtr)
     char capLine[256];
     char tokenEnd[10];            // last token of structure goes here
     AnsiString stcLabel, stcLabel2, stcLine, sizeStr, extent;
-    symbolDef *symbol;
     int error;
-    int value;
-    bool backRef;
     int n = 2;                    // token index
     int i;
 
     if (*label)                           // if label
-      define(label, loc, pass2, true, errorPtr); // define label
+      define(label, LocExpr(), pass2, true, errorPtr); // define label
 
     strcap(capLine, line);                // capitalize line
     error = OK;

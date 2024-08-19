@@ -50,19 +50,22 @@
 
 
 extern bool pass2;
+extern bool isRelative;
 extern char buffer[256];  //ck used to form messages for display in windows
 extern char numBuf[20];
 
 
-//#define isTerm(c)   (isspace(c) || (c == ',') || c == '\0')
+//#define isTerm(c)   (isspace((unsigned char)(c)) || (c == ',') || c == '\0')
 //#define isRegNum(c) ((c >= '0') && (c <= '7'))
 
 char *opParse(char *p, opDescriptor *d, int *errorPtr)
 {
   char *n;
   int parenCount;
+  exprVal expr;
 
   try {
+    *errorPtr = OK;
     d->size = 0;
     // if addressing mode in ( )
     // remove spaces inside parenthesis       CK Oct-26-2008
@@ -78,7 +81,7 @@ char *opParse(char *p, opDescriptor *d, int *errorPtr)
           parenCount++;
         else if (*sr == ')')
           parenCount--;
-        if (isspace(*sr))    // skip spaces
+        if (isspace((unsigned char)*sr))    // skip spaces
           sr++;
         else
           *ds++ = *sr++;
@@ -91,26 +94,32 @@ char *opParse(char *p, opDescriptor *d, int *errorPtr)
       while( (*ds++ = *sr++) != 0);  // copy ')' and remaining text
     }
 
-    // Check for immediate mode
-    if (p[0] == '#') {
-      p = eval(++p, &(d->data), &(d->backRef), errorPtr);
-      // If expression evaluates OK, then return
-      if (*errorPtr < SEVERE) {
-        if (isTerm(*p) || p[0]=='.') {
-	  d->mode = IMMEDIATE;
-          // #n.L is used to prevent MOVEQ, ADDQ & SUBQ optimizations  ck 4-2006
-          if (p[0]=='.' && p[1]=='L') {
-            d->size = LONG_SIZE;
-            p += 2;
-          }
-	  return p;
-	} else {
-	  NEWERROR(*errorPtr, SYNTAX);
-	  return NULL;
+	// Check for immediate mode
+	if (p[0] == '#') {
+		p = eval(++p, &expr, &(d->backRef), errorPtr);
+		d->data = expr.value;
+		// If expression evaluates OK, then return
+		if (*errorPtr < SEVERE) {
+            if (isTerm(*p) || p[0] == '.') {
+				d->mode = IMMEDIATE;
+				// #n.L is used to prevent MOVEQ, ADDQ & SUBQ optimizations  ck 4-2006
+				if (p[0] == '.' && p[1] == 'L') {
+					d->size = LONG_SIZE;
+					p += 2;
+				}
+                if (*errorPtr == OK && expr.isRelative) {
+                    NEWERROR(*errorPtr, INV_RELATIVE);
+                }
+				return p;
+			}
+			else {
+				NEWERROR(*errorPtr, SYNTAX);
+				return NULL;
+			}
+		}
+		else
+			return NULL;
 	}
-      } else
-        return NULL;
-    }
 
     // Check for address or data register direct
     if (isRegNum(p[1]) && isTerm(p[2])) {
@@ -199,7 +208,8 @@ char *opParse(char *p, opDescriptor *d, int *errorPtr)
         if((n[1] == 'A' && isRegNum(n[2])) || (n[1] == 'S' && n[2] == 'P') ) {
           p++;                  // skip (
           // evaluate displacement, p points to ','
-	  p = eval(p, &(d->data), &(d->backRef), errorPtr);
+	        p = eval(p, &expr, &(d->backRef), errorPtr);
+            d->data = expr.value;
         }
       }
 
@@ -251,7 +261,8 @@ char *opParse(char *p, opDescriptor *d, int *errorPtr)
       if (n && n[1] == 'P' && n[2] == 'C') {
         p++;                  // skip (
         // evaluate displacement, p points to ','
-        p = eval(p, &(d->data), &(d->backRef), errorPtr);
+        p = eval(p, &expr, &(d->backRef), errorPtr);
+        d->data = expr.value;
       }
 
       // Check for PC relative (PC) or (PC,Xi)
@@ -329,7 +340,8 @@ char *opParse(char *p, opDescriptor *d, int *errorPtr)
     }
 
     // All other addressing modes start with a constant expression
-    p = eval(p, &(d->data), &(d->backRef), errorPtr);
+    p = eval(p, &expr, &(d->backRef), errorPtr);
+    d->data = expr.value;
     if (*errorPtr < SEVERE) {
       // Check for address register indirect with displacement
       if (p[0] == '(' &&
@@ -340,7 +352,10 @@ char *opParse(char *p, opDescriptor *d, int *errorPtr)
           d->reg = p[2] - '0';
         // Check for plain address register indirect with displacement
         if (p[3] == ')') {
-          d->mode = AnIndDisp;
+            if (*errorPtr == 0 && d->data == 0)   // optimize away constant zero displacement. TODO: handle expressions that are undefined in pass 1 and evaluate to zero in pass 2 (they need a displacement)
+                d->mode = AnInd;
+          else
+            d->mode = AnIndDisp;
           return p+4;
         }
         // Check for address register indirect with index
@@ -409,6 +424,12 @@ char *opParse(char *p, opDescriptor *d, int *errorPtr)
           }
         }
       }
+
+      if (expr.isRelative || *errorPtr == INCOMPLETE) {
+          d->mode = PCDisp;
+          return p;
+      }
+
       // Check for absolute   (check this last ck 12-11-2002)
       if (isTerm(p[0]) || *errorPtr == INCOMPLETE || p[0]=='.' || p[0]=='{') {
         // Determine size of absolute address

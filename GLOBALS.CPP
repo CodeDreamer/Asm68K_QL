@@ -57,9 +57,10 @@ bool continuation;	// TRUE if the listing line is a continuation
 
 // Option flags
 bool listFlag = true;	        // True if a listing is desired
-bool objFlag  = true;	        // True if an S-Record object code file is desired
+bool objFlag  = false;	        // True if an S-Record object code file is desired
+bool binFlag  = true;	        // True if binary output is desired
 bool CEXflag  = true;	        // True is Constants are to be EXpanded
-bool BITflag  = true;           // True to assemble bitfield instructions
+bool BITflag  = false;           // True to assemble bitfield instructions
 bool CREflag  = true;           // true adds symbol table to listing
 bool MEXflag  = true;           // true expands macro calls in listing
 bool SEXflag  = true;           // true expands structured code in listing
@@ -93,6 +94,7 @@ bool mapROM;
 bool mapRead;
 bool mapProtected;
 bool mapInvalid;
+bool isRelative;
 int mapROMStart, mapROMEnd;
 int mapReadStart, mapReadEnd;
 int mapProtectedStart, mapProtectedEnd;

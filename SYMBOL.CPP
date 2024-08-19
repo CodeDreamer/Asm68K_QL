@@ -63,20 +63,20 @@ void clearSymbols()
 }
 
 //--------------------------------------------------------------------------
-//    Function: lookup()
+//   Function: lookup()
 //		Searches the symbol table for a previously defined
 //		symbol or creates a new symbol. The routine functions
 //		as follows:
 //
 //		Symbol
 //		Found				  Returned
-//		In	Create	  Action	  Error
+//		In      Create	  Action	  Error
 //		Table?  Flag	  Taken		  Code
 //		------  ------    --------------  -----------
 //		  N     FALSE     None		  UNDEFINED
 //		  N     true      Symbol created  OK
-//      	  Y     FALSE     None		  OK
-//		  Y	true      None		  MULTIPLE_DEFS
+//        Y     FALSE     None		  OK
+//		  Y	    true      None		  MULTIPLE_DEFS
 //
 //		In addition, the routine always returns a pointer to
 //		the structure (type symbolDef) which contains the
@@ -88,95 +88,98 @@ void clearSymbols()
 //		char *sym;
 //		int create, *errorPtr;
 
-symbolDef *lookup(char *sym, int create, int *errorPtr)
+symbolDef* lookup(char* sym, int create, int* errorPtr)
 {
-  int h, cmp;
-  symbolDef *s, *last, *t = NULL;
-  char sym2[SIGCHARS+1];        // CK for local labels
-  int i, j;
+	int h, cmp;
+	symbolDef* s, * last, * t = NULL;
+	char sym2[SIGCHARS + 1];        // CK for local labels
+	int i, j;
 
-  try {
+	try {
 
-  // Local label code  CK May-22-2009 mod Sep-23-2009
-  // Local labels begin with '.'
-  // A local label is converted to a unique label here by appending the
-  // local label to the last global label stored in globalLabel.
-  // Simple name mangling is done by replacing . with : to prevent
-  // duplicate symbol errors with user created labels and to prevent labels
-  // that contain dots in the middle of the label that confuses the parser
-  // because of the .L that may be used to force long addressing with labels.
-  // The new unique label takes the form of global:local.
-  if (*sym == '.') {            // if local label
-    *sym = ':';
-    i = 0;
-    j = 0;
-    while(i<SIGCHARS && globalLabel[i] != '\0') {
-      sym2[i] = globalLabel[i]; // make unique global label from local label
-      i++;
-    }
-    while(i<SIGCHARS && sym[j])
-      sym2[i++] = sym[j++];
-    sym2[i] = '\0';
-    if (i >= SIGCHARS)
-      NEWERROR(*errorPtr, LABEL_TOO_LONG);
+		// Local label code  CK May-22-2009 mod Sep-23-2009
+		// Local labels begin with '.'
+		// A local label is converted to a unique label here by appending the
+		// local label to the last global label stored in globalLabel.
+		// Simple name mangling is done by replacing . with : to prevent
+		// duplicate symbol errors with user created labels and to prevent labels
+		// that contain dots in the middle of the label that confuses the parser
+		// because of the .L that may be used to force long addressing with labels.
+		// The new unique label takes the form of global:local.
+		if (*sym == '.') {            // if local label
+			*sym = ':';
+			i = 0;
+			j = 0;
+			while (i < SIGCHARS && globalLabel[i] != '\0') {
+				sym2[i] = globalLabel[i]; // make unique global label from local label
+				i++;
+			}
+			while (i < SIGCHARS && sym[j])
+				sym2[i++] = sym[j++];
+			sym2[i] = '\0';
+			if (i >= SIGCHARS)
+				NEWERROR(*errorPtr, LABEL_TOO_LONG);
 
-    strcpy(sym, sym2);
-  }
+			strcpy(sym, sym2);
+		}
 
-  if (!symbolInit) {
-    for (h = 0; h <= MAXHASH; h++)
-      htable[h] = 0;
-    symbolInit = true;
-  }
-  h = hash(sym);
-  s = htable[h];
-  if (s) {
-    // Search the linked list for a matching symbol
-    last = NULL;
-    while (s && (cmp = strcmp(s->name, sym)) < 0) {
-      last = s;
-      s = s->next;
-    }
-    // If a match was found, return pointer to the structure
-    if (s && !cmp) {
-      if (create) {
-        if (!(s->flags & REDEFINABLE))  // if not SET directive (CK 10/12/2009)
- 	  NEWERROR(*errorPtr, MULTIPLE_DEFS);
-      }
-      t = s;
-    }
-    // Otherwise insert the symbol in the list
-    else if (create)
-      if (last) {
-	// The symbol goes after an existing symbol
-	t = new symbolDef;
-	last->next = t;
-	t->next = s;
-	strcpy(t->name, sym);
-      } else {
-	/* The symbol goes at the head of a list */
-	t = new symbolDef;
-	t->next = htable[h];
-	htable[h] = t;
-	strcpy(t->name, sym);
-      }
-    else
-      NEWERROR(*errorPtr, UNDEFINED);
-  } else if (create) {
-    t = new symbolDef;
-    htable[h] = t;
-    t->next = NULL;
-    strcpy(t->name, sym);
-  } else
-    NEWERROR(*errorPtr, UNDEFINED);
+		if (!symbolInit) {
+			for (h = 0; h <= MAXHASH; h++)
+				htable[h] = 0;
+			symbolInit = true;
+		}
+		h = hash(sym);
+		s = htable[h];
+		if (s) {
+			// Search the linked list for a matching symbol
+			last = NULL;
+			while (s && (cmp = strcmp(s->name, sym)) < 0) {
+				last = s;
+				s = s->next;
+			}
+			// If a match was found, return pointer to the structure
+			if (s && !cmp) {
+				if (create) {
+					if (!(s->flags & REDEFINABLE))  // if not SET directive (CK 10/12/2009)
+						NEWERROR(*errorPtr, MULTIPLE_DEFS);
+				}
+				t = s;
+			}
+			// Otherwise insert the symbol in the list
+			else if (create)
+				if (last) {
+					// The symbol goes after an existing symbol
+					t = new symbolDef;
+					last->next = t;
+					t->next = s;
+					strcpy(t->name, sym);
+				}
+				else {
+					/* The symbol goes at the head of a list */
+					t = new symbolDef;
+					t->next = htable[h];
+					htable[h] = t;
+					strcpy(t->name, sym);
+				}
+			else
+				NEWERROR(*errorPtr, UNDEFINED);
+		}
+		else if (create) {
+			t = new symbolDef;
+			htable[h] = t;
+			t->next = NULL;
+			strcpy(t->name, sym);
+		}
+		else
+			NEWERROR(*errorPtr, UNDEFINED);
 
-  }
-  catch( ... ) {
-    NEWERROR(*errorPtr, EXCEPTION);
-    sprintf(buffer, "ERROR: An exception occurred in routine 'lookup'. \n");
-    return NULL;
-  }
-  return t;
+	}
+	catch (...) {
+		NEWERROR(*errorPtr, EXCEPTION);
+		sprintf(buffer, "ERROR: An exception occurred in routine 'lookup'. \n");
+		return NULL;
+	}
+	return t;
 }
 
 //----------------------------------------------
@@ -201,7 +204,7 @@ int optCRE()
         // print value in column 20 or 2 spaces after label if label >= 18 chars
         while (bytes++ < 18)
           fprintf(listFile, " ");
-        fprintf(listFile, "  %X\n",s->value);
+        fprintf(listFile, "  %X\n",s->value.value);
         s = s->next;
       }
     }
@@ -237,7 +240,7 @@ int hash(char *symbol)
 //      	char *sym;
 //      	int value, check, *errorPtr;
 
-symbolDef *define(char *sym, int value, bool pass2, bool check, int *errorPtr) {
+symbolDef *define(char *sym, const exprVal& value, bool pass2, bool check, int *errorPtr) {
   symbolDef *symbol;
   bool labelIsGlobal = (*sym != '.');   // local label code CK Sep-23-2009
 
@@ -250,11 +253,15 @@ symbolDef *define(char *sym, int value, bool pass2, bool check, int *errorPtr) {
 
     if (pass2) {
       if (check) {      // if check for phase error
-        if (symbol->value != value)
-          if (symbol->flags & BACKREF)  // if symbol already defined
-            NEWERROR(*errorPtr, MULTIPLE_DEFS);
-          else
-            NEWERROR(*errorPtr, PHASE_ERROR);
+          if (symbol->value.value != value.value) {
+              if (symbol->flags & BACKREF)  // if symbol already defined
+                  NEWERROR(*errorPtr, MULTIPLE_DEFS);
+              else
+                  NEWERROR(*errorPtr, PHASE_ERROR);
+          } 
+          else if (symbol->value.isRelative != value.isRelative) {
+              NEWERROR(*errorPtr, PHASE_ERROR);
+          }
       }
       symbol->flags |= BACKREF;       // mark symbol as defined
       if (symbol->flags & REDEFINABLE)  // ck 1-10-2008

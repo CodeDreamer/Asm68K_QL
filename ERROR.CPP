@@ -106,6 +106,15 @@ int printError(FILE *outFile, int errorCode, int lineNum)
     case DIV_BY_ZERO:
       sprintf(buffer, "ERROR: Division by zero attempted\n");
       break;
+    case INV_OP_TYPE_MIX:
+      sprintf(buffer, "ERROR: Invalid combination of relative and absolute operands\n");
+      break;
+    case INV_RELATIVE:
+      sprintf(buffer, "ERROR: Illegal use of relative address\n");
+      break;
+    case INV_ABSOLUTE:
+      sprintf(buffer, "ERROR: Absolute expression used in relocatable code\n");
+      break;
     case INV_OPCODE:
       sprintf(buffer, "ERROR: Invalid opcode\n");
       break;

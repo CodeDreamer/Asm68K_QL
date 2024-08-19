@@ -33,6 +33,7 @@
  *
  *	Errors: ASCII_TOO_BIG
  *		DIV_BY_ZERO
+ *      INV_OP_TYPE_MIX
  *		INCOMPLETE
  *		NUMBER_TOO_BIG
  *		REG_LIST_SPEC
@@ -56,6 +57,7 @@
 
 extern bool pass2;
 extern int loc;
+extern bool isRelative;
 extern char buffer[256];  //ck used to form messages for display in windows
 extern char numBuf[20];
 
@@ -67,15 +69,15 @@ const unsigned int LONGLIMIT = 0xFFFFFFFF;         //ck
 
 #define STACKMAX 5
 
-char *eval(char	*p, int *valuePtr, bool *refPtr, int *errorPtr)
+char *eval(char	*p, exprVal *valuePtr, bool *refPtr, int *errorPtr)
 {
-  int	valStack[STACKMAX];
+  exprVal	valStack[STACKMAX];
   char	opStack[STACKMAX-1];
   int	valPtr = 0;
   int	opPtr = 0;
-  int	t;
+  exprVal	t;
   int	prec;
-  int	i;
+  exprVal	i;
   bool	evaluate, backRef;
   int	status;
 
@@ -153,13 +155,13 @@ char *eval(char	*p, int *valuePtr, bool *refPtr, int *errorPtr)
           opStack[opPtr++] = *p;
         p++;
       }
-      else if (*p==',' || *p=='(' || *p==')' || !(*p) || isspace(*p) || *p=='.' || *p=='{' || *p==':' || *p=='}') {
+      else if (*p==',' || *p=='(' || *p==')' || !(*p) || isspace((unsigned char)*p) || *p=='.' || *p=='{' || *p==':' || *p=='}') {
         // If the character terminates the expression,
         //     then return the various results needed.
         if (evaluate)
           *valuePtr = valStack[--valPtr];
         else
-          *valuePtr = 0;
+          valuePtr->value = 0;
 
         return p;
       } else {
@@ -182,188 +184,205 @@ char *eval(char	*p, int *valuePtr, bool *refPtr, int *errorPtr)
 // return the value of the operand at *p in numberPtr.
 // refPtr set true if valid backwards reference.
 
-char *evalNumber(char *p, int *numberPtr, bool *refPtr, int *errorPtr)
+char* evalNumber(char* p, exprVal* numberPtr, bool* refPtr, int* errorPtr)
 {
-  int	status;
-  int	base;
-  int	x;
-  char	name[SIGCHARS+1];
-  symbolDef *symbol;            //ck , *lookup();
-  int	i;
-  bool	endFlag;
+	int	status;
+	unsigned int	base;
+	exprVal	x;
+	char	name[SIGCHARS + 1];
+	symbolDef* symbol;            //ck , *lookup();
+	int	i;
+	bool	endFlag;
+	numberPtr->isRelative = false;
 
-  try {
+	try {
 
-  *refPtr = true;
+		*refPtr = true;
 
-  //ck   * is current address
-  if (*p == '*') {
-    *numberPtr = loc;
-    return ++p;
-  }
-  else if (*p == '-') {
-    /* Evaluate unary minus operator recursively */
-    p = evalNumber(++p, &x, refPtr, errorPtr);
-    *numberPtr = -x;
-    return p;
-  }
-  else if (*p == '~') {
-    /* Evaluate one's complement operator recursively */
-    p = evalNumber(++p, &x, refPtr, errorPtr);
-    *numberPtr = ~x;
-    return p;
-  }
-  else if (*p == '(') {
-    /* Evaluate parenthesized expressions recursively */
-    p = eval(++p, &x, refPtr, errorPtr);
-    if (*errorPtr > SEVERE)
-      return NULL;
-    else if (*p != ')') {
-      NEWERROR(*errorPtr, SYNTAX);
-      return NULL;
-    } else {
-      *numberPtr = x;
-      return ++p;
-    }
-  }
-  else if (*p == '$' && isxdigit(*(p+1))) {
-    /* Convert hex digits until another character is
-       found. (At least one hex digit is present.) */
-    x = 0;
-    while (isxdigit(*++p)) {
-      if ((unsigned int)x > (unsigned int)LONGLIMIT/16)
-	NEWERROR(*errorPtr, NUMBER_TOO_BIG);
-      if (*p > '9')
-	x = 16 * x + (*p - 'A' + 10);
-      else
-	x = 16 * x + (*p - '0');
-    }
-    *numberPtr = x;
-    return p;
-  }
-  else if (*p == '%' || *p == '@' || isdigit(*p)) {
-    /* Convert digits in the appropriate base (binary,
-       octal, or decimal) until an invalid digit is found. */
-    if (*p == '%') {
-      base = 2;
-      p++;
-    }
-    else if (*p == '@') {
-      base = 8;
-      p++;
-    }
-    else
-      base = 10;
-    /* Check that at least one digit is present */
-    if (*p < '0' || *p >= '0' + base) {
-      NEWERROR(*errorPtr, SYNTAX);
-      return NULL;
-    }
-    x = 0;
-    /* Convert the digits into an integer */
-    while (*p >= '0' && *p < '0' + base) {
-      if ((unsigned int)x > ((unsigned int)(LONGLIMIT - (*p - '0')) / base)) {
-	NEWERROR(*errorPtr, NUMBER_TOO_BIG);
-      }
-      x = (int) ( (int) ((int) base * x) + (int) (*p - '0') );
-      p++;
-    }
-    *numberPtr = x;
-    return p;
-  }
-  else if (*p == '\'') {        // if start of string literal
-    endFlag = false;
-    i = 0;
-    x = 0;
-    p++;
-    while (!endFlag && *p) {
-      if (*p == '\'')           // if '
-	if (*(p+1) == '\'') {   // if ''
-	  x = (x << 8) + *p;
-	  i++;
-	  p++;
+		//ck   * is current address
+		if (*p == '*') {
+			numberPtr->value = loc;
+			numberPtr->isRelative = isRelative;
+			return ++p;
+		}
+		else if (*p == '-') {
+			/* Evaluate unary minus operator recursively */
+			p = evalNumber(++p, &x, refPtr, errorPtr);
+			if (x.isRelative) {
+				NEWERROR(*errorPtr, INV_RELATIVE);
+				//return NULL;
+			}
+			numberPtr->value = -x.value;
+			return p;
+		}
+		else if (*p == '~') {
+			/* Evaluate one's complement operator recursively */
+			p = evalNumber(++p, &x, refPtr, errorPtr);
+			if (x.isRelative) {
+				NEWERROR(*errorPtr, INV_RELATIVE);
+				//return NULL;
+			}
+			numberPtr->value = ~x.value;
+			return p;
+		}
+		else if (*p == '(') {
+			/* Evaluate parenthesized expressions recursively */
+			p = eval(++p, &x, refPtr, errorPtr);
+			if (*errorPtr > SEVERE)
+				return NULL;
+			else if (*p != ')') {
+				NEWERROR(*errorPtr, SYNTAX);
+				return NULL;
+			}
+			else {
+				*numberPtr = x;
+				return ++p;
+			}
+		}
+		else if (*p == '$' && isxdigit(*(p + 1))) {
+			/* Convert hex digits until another character is
+			   found. (At least one hex digit is present.) */
+			unsigned int num = 0;
+			while (isxdigit(*++p)) {
+				if (num > (unsigned int)LONGLIMIT / 16)
+					NEWERROR(*errorPtr, NUMBER_TOO_BIG);
+				if (*p > '9')
+					num = 16 * num + (*p - 'A' + 10);
+				else
+					num = 16 * num + (*p - '0');
+			}
+			numberPtr->value = num;
+			return p;
+		}
+		else if (*p == '%' || *p == '@' || isdigit(*p)) {
+			/* Convert digits in the appropriate base (binary,
+			   octal, or decimal) until an invalid digit is found. */
+			if (*p == '%') {
+				base = 2;
+				p++;
+			}
+			else if (*p == '@') {
+				base = 8;
+				p++;
+			}
+			else
+				base = 10;
+			/* Check that at least one digit is present */
+			if (*p < '0' || *p >= '0' + (int)base) {
+				NEWERROR(*errorPtr, SYNTAX);
+				return NULL;
+			}
+			unsigned int num = 0;
+			/* Convert the digits into an integer */
+			while (*p >= '0' && *p < '0' + (int)base) {
+				if (num > ((unsigned int)(LONGLIMIT - (*p - '0')) / base)) {
+					NEWERROR(*errorPtr, NUMBER_TOO_BIG);
+				}
+				num = base * num + (*p - '0');
+				p++;
+			}
+			numberPtr->value = num;
+			return p;
+		}
+		else if (*p == '\'') {        // if start of string literal
+			endFlag = false;
+			i = 0;
+			unsigned int literal = 0;
+			p++;
+			while (!endFlag && *p) {
+				if (*p == '\'')           // if '
+					if (*(p + 1) == '\'') {   // if ''
+						literal = (literal << 8) + *p;
+						i++;
+						p++;
+					}
+					else                    // ending ' found
+						endFlag = true;       // end of string literal
+				else {
+					literal = (literal << 8) + *p;
+					i++;
+				}
+				p++;
+			}
+			if (i == 0 || *p == '\0') { // if no operand or unexpected end of string
+				NEWERROR(*errorPtr, SYNTAX);
+				return NULL;
+			}
+			else if (i == 3)
+				literal = literal << 8;
+			else if (i > 4)
+				NEWERROR(*errorPtr, ASCII_TOO_BIG);
+			numberPtr->value = literal;
+			return p;
+		}
+		else if (isalpha(*p) || *p == '.' || *p == '_') {  // *ck 12-8-2005
+			/* Determine the value of a symbol */
+			i = 0;
+			/* Collect characters of the symbol's name
+			   (only SIGCHARS characters are significant) */
+			do {
+				if (i < SIGCHARS)
+					name[i++] = *p;
+				p++;
+			} while (isalnum(*p) || *p == '_' || *p == '$' || *p == '.'); // *ck 12-8-2005 so labels may have dots
+			//} while (isalnum(*p) || *p == '_' || *p == '$'); // *ck 2-22-2007 operand.L caused error (no dots in labels)
+			name[i] = '\0';
+			/* Look up the name in the symbol table, resulting
+			   in a pointer to the symbol table entry */
+			status = OK;
+			symbol = lookup(name, false, &status);
+
+			if (status == OK)
+				/* If symbol was found, and it's not a register
+				   list symbol, then return its value */
+				if (!(symbol->flags & REG_LIST_SYM)) {
+					*numberPtr = symbol->value;
+
+					if (pass2)
+						*refPtr = (symbol->flags & BACKREF);
+				}
+				else {
+					/* If it is a register list symbol, return error */
+					numberPtr->value = 0;
+					NEWERROR(*errorPtr, REG_LIST_SPEC);
+				}
+			else {
+				/* Otherwise return an error */
+				if (pass2) {
+					if ((strncmp(name, ".0", 2)) == 0) {
+						NEWERROR(*errorPtr, ENDI_EXPECTED);
+					}
+					else if ((strncmp(name, ".1", 2)) == 0) {
+						NEWERROR(*errorPtr, ENDW_EXPECTED);
+					}
+					else if ((strncmp(name, ".2", 2)) == 0) {
+						NEWERROR(*errorPtr, ENDF_EXPECTED);
+					}
+					else if ((strncmp(name, ".3", 2)) == 0) {
+						NEWERROR(*errorPtr, REPEAT_EXPECTED);
+					}
+					else {
+						NEWERROR(*errorPtr, UNDEFINED);
+					}
+				}
+				else
+					NEWERROR(*errorPtr, INCOMPLETE);
+				*refPtr = false;
+			}
+
+			return p;
+		}
+		else {
+			/* Otherwise, the character was not a valid operand */
+			NEWERROR(*errorPtr, SYNTAX);
+			return NULL;
+		}
 	}
-	else                    // ending ' found
-	  endFlag = true;       // end of string literal
-      else {
-	x = (x << 8) + *p;
-	i++;
-      }
-      p++;
-    }
-    if (i == 0 || *p == '\0') { // if no operand or unexpected end of string
-      NEWERROR(*errorPtr, SYNTAX);
-      return NULL;
-    }
-    else if (i == 3)
-      x = x << 8;
-    else if (i > 4)
-      NEWERROR(*errorPtr, ASCII_TOO_BIG);
-    *numberPtr = x;
-    return p;
-  }
-  else if (isalpha(*p) || *p == '.' || *p == '_') {  // *ck 12-8-2005
-    /* Determine the value of a symbol */
-    i = 0;
-    /* Collect characters of the symbol's name
-       (only SIGCHARS characters are significant) */
-    do {
-      if (i < SIGCHARS)
-	name[i++] = *p;
-      p++;
-      //} while (isalnum(*p) || *p == '_' || *p == '$' || *p == '.'); // *ck 12-8-2005 so labels may have dots
-    } while (isalnum(*p) || *p == '_' || *p == '$'); // *ck 2-22-2007 operand.L caused error (no dots in labels)
-    name[i] = '\0';
-    /* Look up the name in the symbol table, resulting
-       in a pointer to the symbol table entry */
-    status = OK;
-    symbol = lookup(name, false, &status);
-
-    if (status == OK)
-      /* If symbol was found, and it's not a register
-         list symbol, then return its value */
-      if (!(symbol->flags & REG_LIST_SYM)) {
-	*numberPtr = symbol->value;
-
-	if (pass2)
-	  *refPtr = (symbol->flags & BACKREF);
-      } else {
-	/* If it is a register list symbol, return error */
-	*numberPtr = 0;
-	NEWERROR(*errorPtr, REG_LIST_SPEC);
-      }
-    else {
-      /* Otherwise return an error */
-      if (pass2) {
-        if( (strncmp(name, ".0", 2)) == 0) {
-          NEWERROR(*errorPtr, ENDI_EXPECTED);
-        } else if( (strncmp(name, ".1", 2)) == 0) {
-          NEWERROR(*errorPtr, ENDW_EXPECTED);
-        } else if( (strncmp(name, ".2", 2)) == 0) {
-          NEWERROR(*errorPtr, ENDF_EXPECTED);
-        } else if( (strncmp(name, ".3", 2)) == 0) {
-          NEWERROR(*errorPtr, REPEAT_EXPECTED);
-        } else {
-          NEWERROR(*errorPtr, UNDEFINED);
-        }
-      }
-      else
-        NEWERROR(*errorPtr, INCOMPLETE);
-      *refPtr = false;
-    }
-
-    return p;
-  } else {
-    /* Otherwise, the character was not a valid operand */
-    NEWERROR(*errorPtr, SYNTAX);
-    return NULL;
-  }
-  }
-  catch( ... ) {
-    NEWERROR(*errorPtr, EXCEPTION);
-    sprintf(buffer, "ERROR: An exception occurred in routine 'evalNumber'. \n");
-    return NULL;
-  }
+	catch (...) {
+		NEWERROR(*errorPtr, EXCEPTION);
+		sprintf(buffer, "ERROR: An exception occurred in routine 'evalNumber'. \n");
+		return NULL;
+	}
 
   //ck return NORMAL;
 }
@@ -396,35 +415,45 @@ int precedence(char op)
 
 
 
-int doOp(int val1, int val2, char op, int *result)
+int doOp(exprVal val1, exprVal val2, char op, exprVal* result)
 {
 
-  /* Performs the operation of the operator on the two operands.
-     Returns OK or DIV_BY_ZERO. */
+	/* Performs the operation of the operator on the two operands.
+	   Returns OK or DIV_BY_ZERO. */
+	switch (op) {
+	case '+': result->value = val1.value + val2.value;  break;
+	case '-': result->value = val1.value - val2.value;  break;
+	case '&': result->value = val1.value & val2.value;  break;
+	case '!': case '|': result->value = val1.value | val2.value;  break;
+	case '^': result->value = val1.value ^ val2.value;  break;       // ck 12-11-2006
+	case '>': result->value = (unsigned)val1.value >> val2.value; break;
+	case '<': result->value = val1.value << val2.value; break;
+	case '*': result->value = val1.value * val2.value;  break;
+	case '/':
+		if (val2.value == 0)
+			return DIV_BY_ZERO;
+		result->value = val1.value / val2.value;
+		break;
+	case '\\':
+		if (val2.value == 0)
+			return DIV_BY_ZERO;
+		result->value = val1.value % val2.value;
+		break;
+	default:
+		return INV_OPERATOR;
+	}
 
-  switch (op) {
-    case '+' : *result = val1 + val2;  return OK;
-    case '-' : *result = val1 - val2;  return OK;
-    case '&' : *result = val1 & val2;  return OK;
-    case '!' : case '|': *result = val1 | val2;  return OK;
-    case '^' : *result = val1 ^ val2;  return OK;       // ck 12-11-2006
-    case '>' : *result = (unsigned) val1 >> val2; return OK;
-    case '<' : *result = val1 << val2; return OK;
-    case '*' : *result = val1 * val2;  return OK;
-    case '/' :
-      if (val2 != 0) {
-	*result = val1 / val2;
+	bool isRelative = false;
+	if (op == '+') {
+		if (val1.isRelative && val2.isRelative)
+			return INV_OP_TYPE_MIX;
+		isRelative = val1.isRelative || val2.isRelative;
+	} else if (op == '-') {
+		if (!val1.isRelative && val2.isRelative)
+			return INV_OP_TYPE_MIX;
+		isRelative = val1.isRelative != val2.isRelative;
+	} else if (val1.isRelative || val2.isRelative)
+		return INV_OP_TYPE_MIX;
+	result->isRelative = isRelative;
 	return OK;
-      }
-      else
-	return DIV_BY_ZERO;
-    case '\\':
-      if (val2 != 0) {
-	*result = val1 % val2;
-	return OK;
-      }
-      else
-	return DIV_BY_ZERO;
-  }
-  return INV_OPERATOR;
 }

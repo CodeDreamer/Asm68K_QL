@@ -165,7 +165,7 @@ flavor asrfl[] = {
        };
 
 flavor bccfl[] = {
-	{ Absolute, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6400, 0x6400, 0x6400 }
+	{ Absolute | PCDisp, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6400, 0x6400, 0x6400 }
        };
 
 flavor bchgfl[] = {
@@ -183,7 +183,7 @@ flavor bclrfl[] = {
        };
 
 flavor bcsfl[] = {
-	{ Absolute, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6500, 0x6500, 0x6500 }
+	{ Absolute | PCDisp, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6500, 0x6500, 0x6500 }
        };
 
 flavor bfchgfl[] = {
@@ -219,55 +219,55 @@ flavor bftstfl[] = {
        };
 
 flavor beqfl[] = {
-	{ Absolute, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6700, 0x6700, 0x6700 }
+	{ Absolute | PCDisp, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6700, 0x6700, 0x6700 }
        };
 
 flavor bgefl[] = {
-	{ Absolute, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6C00, 0x6C00, 0x6C00 }
+	{ Absolute | PCDisp, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6C00, 0x6C00, 0x6C00 }
        };
 
 flavor bgtfl[] = {
-	{ Absolute, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6E00, 0x6E00, 0x6E00 }
+	{ Absolute | PCDisp, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6E00, 0x6E00, 0x6E00 }
        };
 
 flavor bhifl[] = {
-	{ Absolute, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6200, 0x6200, 0x6200 }
+	{ Absolute | PCDisp, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6200, 0x6200, 0x6200 }
        };
 
 flavor bhsfl[] = {
-	{ Absolute, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6400, 0x6400, 0x6400 }
+	{ Absolute | PCDisp, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6400, 0x6400, 0x6400 }
        };
 
 flavor blefl[] = {
-	{ Absolute, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6f00, 0x6F00, 0x6F00 }
+	{ Absolute | PCDisp, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6f00, 0x6F00, 0x6F00 }
        };
 
 flavor blofl[] = {
-	{ Absolute, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6500, 0x6500, 0x6500 }
+	{ Absolute | PCDisp, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6500, 0x6500, 0x6500 }
        };
 
 flavor blsfl[] = {
-	{ Absolute, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6300, 0x6300, 0x6300 }
+	{ Absolute | PCDisp, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6300, 0x6300, 0x6300 }
        };
 
 flavor bltfl[] = {
-	{ Absolute, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6d00, 0x6D00, 0x6D00 }
+	{ Absolute | PCDisp, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6d00, 0x6D00, 0x6D00 }
        };
 
 flavor bmifl[] = {
-	{ Absolute, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6b00, 0x6B00, 0x6B00 }
+	{ Absolute | PCDisp, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6b00, 0x6B00, 0x6B00 }
        };
 
 flavor bnefl[] = {
-	{ Absolute, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6600, 0x6600, 0x6600 }
+	{ Absolute | PCDisp, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6600, 0x6600, 0x6600 }
        };
 
 flavor bplfl[] = {
-	{ Absolute, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6a00, 0x6A00, 0x6A00 }
+	{ Absolute | PCDisp, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6a00, 0x6A00, 0x6A00 }
        };
 
 flavor brafl[] = {
-	{ Absolute, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6000, 0x6000, 0x6000 }
+	{ Absolute | PCDisp, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6000, 0x6000, 0x6000 }
        };
 
 flavor bsetfl[] = {
@@ -278,7 +278,7 @@ flavor bsetfl[] = {
        };
 
 flavor bsrfl[] = {
-	{ Absolute, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6100, 0x6100, 0x6100 }
+	{ Absolute | PCDisp, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6100, 0x6100, 0x6100 }
        };
 
 flavor btstfl[] = {
@@ -289,11 +289,11 @@ flavor btstfl[] = {
        };
 
 flavor bvcfl[] = {
-	{ Absolute, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6800, 0x6800, 0x6800 }
+	{ Absolute | PCDisp, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6800, 0x6800, 0x6800 }
        };
 
 flavor bvsfl[] = {
-	{ Absolute, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6900, 0x6900, 0x6900 }
+	{ Absolute | PCDisp, 0, SHORT_SIZE | LONG_SIZE | BYTE_SIZE | WORD_SIZE, branch, 0x6900, 0x6900, 0x6900 }
        };
 
 flavor chkfl[] = {
@@ -325,79 +325,79 @@ flavor cmpmfl[] = {
        };
 
 flavor dbccfl[] = {
-	{ DnDirect, Absolute, WORD_SIZE, dbcc, 0, 0x54C8, 0 }
+	{ DnDirect, Absolute | PCDisp, WORD_SIZE, dbcc, 0, 0x54C8, 0 }
        };
 
 flavor dbcsfl[] = {
-	{ DnDirect, Absolute, WORD_SIZE, dbcc, 0, 0x55C8, 0 }
+	{ DnDirect, Absolute | PCDisp, WORD_SIZE, dbcc, 0, 0x55C8, 0 }
        };
 
 flavor dbeqfl[] = {
-	{ DnDirect, Absolute, WORD_SIZE, dbcc, 0, 0x57C8, 0 }
+	{ DnDirect, Absolute | PCDisp, WORD_SIZE, dbcc, 0, 0x57C8, 0 }
        };
 
 flavor dbffl[] = {
-	{ DnDirect, Absolute, WORD_SIZE, dbcc, 0, 0x51C8, 0 }
+	{ DnDirect, Absolute | PCDisp, WORD_SIZE, dbcc, 0, 0x51C8, 0 }
        };
 
 flavor dbgefl[] = {
-	{ DnDirect, Absolute, WORD_SIZE, dbcc, 0, 0x5CC8, 0 }
+	{ DnDirect, Absolute | PCDisp, WORD_SIZE, dbcc, 0, 0x5CC8, 0 }
        };
 
 flavor dbgtfl[] = {
-	{ DnDirect, Absolute, WORD_SIZE, dbcc, 0, 0x5EC8, 0 }
+	{ DnDirect, Absolute | PCDisp, WORD_SIZE, dbcc, 0, 0x5EC8, 0 }
        };
 
 flavor dbhifl[] = {
-	{ DnDirect, Absolute, WORD_SIZE, dbcc, 0, 0x52C8, 0 }
+	{ DnDirect, Absolute | PCDisp, WORD_SIZE, dbcc, 0, 0x52C8, 0 }
        };
 
 flavor dbhsfl[] = {
-	{ DnDirect, Absolute, WORD_SIZE, dbcc, 0, 0x54C8, 0 }
+	{ DnDirect, Absolute | PCDisp, WORD_SIZE, dbcc, 0, 0x54C8, 0 }
        };
 
 flavor dblefl[] = {
-	{ DnDirect, Absolute, WORD_SIZE, dbcc, 0, 0x5FC8, 0 }
+	{ DnDirect, Absolute | PCDisp, WORD_SIZE, dbcc, 0, 0x5FC8, 0 }
        };
 
 flavor dblofl[] = {
-	{ DnDirect, Absolute, WORD_SIZE, dbcc, 0, 0x55C8, 0 }
+	{ DnDirect, Absolute | PCDisp, WORD_SIZE, dbcc, 0, 0x55C8, 0 }
        };
 
 flavor dblsfl[] = {
-	{ DnDirect, Absolute, WORD_SIZE, dbcc, 0, 0x53C8, 0 }
+	{ DnDirect, Absolute | PCDisp, WORD_SIZE, dbcc, 0, 0x53C8, 0 }
        };
 
 flavor dbltfl[] = {
-	{ DnDirect, Absolute, WORD_SIZE, dbcc, 0, 0x5DC8, 0 }
+	{ DnDirect, Absolute | PCDisp, WORD_SIZE, dbcc, 0, 0x5DC8, 0 }
        };
 
 flavor dbmifl[] = {
-	{ DnDirect, Absolute, WORD_SIZE, dbcc, 0, 0x5BC8, 0 }
+	{ DnDirect, Absolute | PCDisp, WORD_SIZE, dbcc, 0, 0x5BC8, 0 }
        };
 
 flavor dbnefl[] = {
-	{ DnDirect, Absolute, WORD_SIZE, dbcc, 0, 0x56C8, 0 }
+	{ DnDirect, Absolute | PCDisp, WORD_SIZE, dbcc, 0, 0x56C8, 0 }
        };
 
 flavor dbplfl[] = {
-	{ DnDirect, Absolute, WORD_SIZE, dbcc, 0, 0x5AC8, 0 }
+	{ DnDirect, Absolute | PCDisp, WORD_SIZE, dbcc, 0, 0x5AC8, 0 }
        };
 
 flavor dbrafl[] = {
-	{ DnDirect, Absolute, WORD_SIZE, dbcc, 0, 0x51C8, 0 }
+	{ DnDirect, Absolute | PCDisp, WORD_SIZE, dbcc, 0, 0x51C8, 0 }
        };
 
 flavor dbtfl[] = {
-	{ DnDirect, Absolute, WORD_SIZE, dbcc, 0, 0x50C8, 0 }
+	{ DnDirect, Absolute | PCDisp, WORD_SIZE, dbcc, 0, 0x50C8, 0 }
        };
 
 flavor dbvcfl[] = {
-	{ DnDirect, Absolute, WORD_SIZE, dbcc, 0, 0x58C8, 0 }
+	{ DnDirect, Absolute | PCDisp, WORD_SIZE, dbcc, 0, 0x58C8, 0 }
        };
 
 flavor dbvsfl[] = {
-	{ DnDirect, Absolute, WORD_SIZE, dbcc, 0, 0x59C8, 0 }
+	{ DnDirect, Absolute | PCDisp, WORD_SIZE, dbcc, 0, 0x59C8, 0 }
        };
 
 flavor divsfl[] = {
@@ -732,172 +732,175 @@ flavor unlkfl[] = {
 // Instructions MUST BE IN ALPHABETICAL ORDER
 
 instruction instTable[] = { // RA added (char *) to suppress warning: ISO C++ forbids converting a string constant to ‘char*’
-	{ (char *)"ABCD", abcdfl, flavorCount(abcdfl), true, NULL },
-	{ (char *)"ADD", addfl, flavorCount(addfl), true, NULL },
-	{ (char *)"ADDA", addafl, flavorCount(addafl), true, NULL },
-	{ (char *)"ADDI", addifl, flavorCount(addifl), true, NULL },
-	{ (char *)"ADDQ", addqfl, flavorCount(addqfl), true, NULL },
-	{ (char *)"ADDX", addxfl, flavorCount(addxfl), true, NULL },
-	{ (char *)"AND", andfl, flavorCount(andfl), true, NULL },
-	{ (char *)"ANDI", andifl, flavorCount(andifl), true, NULL },
-	{ (char *)"ASL", aslfl, flavorCount(aslfl), true, NULL },
-	{ (char *)"ASR", asrfl, flavorCount(asrfl), true, NULL },
-	{ (char *)"BCC", bccfl, flavorCount(bccfl), true, NULL },
-	{ (char *)"BCHG", bchgfl, flavorCount(bchgfl), true, NULL },
-	{ (char *)"BCLR", bclrfl, flavorCount(bclrfl), true, NULL },
-	{ (char *)"BCS", bcsfl, flavorCount(bcsfl), true, NULL },
-	{ (char *)"BEQ", beqfl, flavorCount(beqfl), true, NULL },
-        { (char *)"BFCHG", bfchgfl, flavorCount(bfchgfl), true, NULL },
-        { (char *)"BFCLR", bfclrfl, flavorCount(bfclrfl), true,  NULL },
-        { (char *)"BFEXTS", bfextsfl, flavorCount(bfextsfl), true,  NULL },
-        { (char *)"BFEXTU", bfextufl, flavorCount(bfextufl), true,  NULL },
-        { (char *)"BFFFO", bfffofl, flavorCount(bfffofl), true,  NULL },
-        { (char *)"BFINS", bfinsfl, flavorCount(bfinsfl), true,  NULL },
-        { (char *)"BFSET", bfsetfl, flavorCount(bfsetfl), true,  NULL },
-        { (char *)"BFTST", bftstfl, flavorCount(bftstfl), true,  NULL },
-	{ (char *)"BGE", bgefl, flavorCount(bgefl), true, NULL },
-	{ (char *)"BGT", bgtfl, flavorCount(bgtfl), true, NULL },
-	{ (char *)"BHI", bhifl, flavorCount(bhifl), true, NULL },
-	{ (char *)"BHS", bccfl, flavorCount(bccfl), true, NULL },
-	{ (char *)"BLE", blefl, flavorCount(blefl), true, NULL },
-	{ (char *)"BLO", bcsfl, flavorCount(bcsfl), true, NULL },
-	{ (char *)"BLS", blsfl, flavorCount(blsfl), true, NULL },
-	{ (char *)"BLT", bltfl, flavorCount(bltfl), true, NULL },
-	{ (char *)"BMI", bmifl, flavorCount(bmifl), true, NULL },
-	{ (char *)"BNE", bnefl, flavorCount(bnefl), true, NULL },
-	{ (char *)"BPL", bplfl, flavorCount(bplfl), true, NULL },
-	{ (char *)"BRA", brafl, flavorCount(brafl), true, NULL },
-	{ (char *)"BSET", bsetfl, flavorCount(bsetfl), true, NULL },
-	{ (char *)"BSR", bsrfl, flavorCount(bsrfl), true, NULL },
-	{ (char *)"BTST", btstfl, flavorCount(btstfl), true, NULL },
-	{ (char *)"BVC", bvcfl, flavorCount(bvcfl), true, NULL },
-	{ (char *)"BVS", bvsfl, flavorCount(bvsfl), true, NULL },
-	{ (char *)"CHK", chkfl, flavorCount(chkfl), true, NULL },
-	{ (char *)"CLR", clrfl, flavorCount(clrfl), true, NULL },
-	{ (char *)"CMP", cmpfl, flavorCount(cmpfl), true, NULL },
-	{ (char *)"CMPA", cmpafl, flavorCount(cmpafl), true, NULL },
-	{ (char *)"CMPI", cmpifl, flavorCount(cmpifl), true, NULL },
-	{ (char *)"CMPM", cmpmfl, flavorCount(cmpmfl), true, NULL },
-	{ (char *)"DBCC", dbccfl, flavorCount(dbccfl), true, NULL },
-	{ (char *)"DBCS", dbcsfl, flavorCount(dbcsfl), true, NULL },
-	{ (char *)"DBEQ", dbeqfl, flavorCount(dbeqfl), true, NULL },
-	{ (char *)"DBF", dbffl, flavorCount(dbffl), true, NULL },
-	{ (char *)"DBGE", dbgefl, flavorCount(dbgefl), true, NULL },
-	{ (char *)"DBGT", dbgtfl, flavorCount(dbgtfl), true, NULL },
-	{ (char *)"DBHI", dbhifl, flavorCount(dbhifl), true, NULL },
-	{ (char *)"DBHS", dbccfl, flavorCount(dbccfl), true, NULL },
-	{ (char *)"DBLE", dblefl, flavorCount(dblefl), true, NULL },
-	{ (char *)"DBLO", dbcsfl, flavorCount(dbcsfl), true, NULL },
-        { (char *)"DBLOOP", NULL, 0, false, asmStructure },
-	{ (char *)"DBLS", dblsfl, flavorCount(dblsfl), true, NULL },
-	{ (char *)"DBLT", dbltfl, flavorCount(dbltfl), true, NULL },
-	{ (char *)"DBMI", dbmifl, flavorCount(dbmifl), true, NULL },
-	{ (char *)"DBNE", dbnefl, flavorCount(dbnefl), true, NULL },
-	{ (char *)"DBPL", dbplfl, flavorCount(dbplfl), true, NULL },
-	{ (char *)"DBRA", dbrafl, flavorCount(dbrafl), true, NULL },
-	{ (char *)"DBT", dbtfl, flavorCount(dbtfl), true, NULL },
-	{ (char *)"DBVC", dbvcfl, flavorCount(dbvcfl), true, NULL },
-	{ (char *)"DBVS", dbvsfl, flavorCount(dbvsfl), true, NULL },
-	{ (char *)"DC", NULL, 0, false, dc },
-	{ (char *)"DCB", NULL, 0, false, dcb },
-	{ (char *)"DIVS", divsfl, flavorCount(divsfl), true, NULL },
-	{ (char *)"DIVU", divufl, flavorCount(divufl), true, NULL },
-	{ (char *)"DS", NULL, 0, false, ds },
-        { (char *)"ELSE", NULL, 0, false, asmStructure },
-	{ (char *)"END", NULL, 0, false, funct_end },
-        { (char *)"ENDF", NULL, 0, false, asmStructure },
-        { (char *)"ENDI", NULL, 0, false, asmStructure },
-        { (char *)"ENDW", NULL, 0, false, asmStructure },
-	{ (char *)"EOR", eorfl, flavorCount(eorfl), true, NULL },
-	{ (char *)"EORI", eorifl, flavorCount(eorifl), true, NULL },
-	{ (char *)"EQU", NULL, 0, false, equ },
-	{ (char *)"EXG", exgfl, flavorCount(exgfl), true, NULL },
-	{ (char *)"EXT", extfl, flavorCount(extfl), true, NULL },
-        { (char *)"FAIL", NULL, 0, false, failError },
-        { (char *)"FOR", NULL, 0, false, asmStructure },
-        { (char *)"IF", NULL, 0, false, asmStructure },
-	{ (char *)"ILLEGAL", illegalfl, flavorCount(illegalfl), true, NULL },
-        { (char *)"INCBIN", NULL, 0, false, incbin },
-        { (char *)"INCLUDE", NULL, 0, false, include },
-	{ (char *)"JMP", jmpfl, flavorCount(jmpfl), true, NULL },
-	{ (char *)"JSR", jsrfl, flavorCount(jsrfl), true, NULL },
-	{ (char *)"LEA", leafl, flavorCount(leafl), true, NULL },
-	{ (char *)"LINK", linkfl, flavorCount(linkfl), true, NULL },
-        { (char *)"LIST", NULL, 0, false, listOn },
-	{ (char *)"LSL", lslfl, flavorCount(lslfl), true, NULL },
-	{ (char *)"LSR", lsrfl, flavorCount(lsrfl), true, NULL },
-        { (char *)"MACRO", NULL, 0, false, macro },
-        { (char *)"MEMORY", NULL, 0, false, memory },
-	{ (char *)"MOVE", movefl, flavorCount(movefl), true, NULL },
-	{ (char *)"MOVEA", moveafl, flavorCount(moveafl), true, NULL },
-	//{ (char *)"MOVEC", movecfl, flavorCount(movecfl), true, NULL },
-	{ (char *)"MOVEM", movefl, 0, false, movem },   // movefl is only used for syntax highlighting
-	{ (char *)"MOVEP", movepfl, flavorCount(movepfl), true, NULL },
-	{ (char *)"MOVEQ", moveqfl, flavorCount(moveqfl), true, NULL },
-	//{ (char *)"MOVES", movesfl, flavorCount(movesfl), true, NULL },
-	{ (char *)"MULS", mulsfl, flavorCount(mulsfl), true, NULL },
-	{ (char *)"MULU", mulufl, flavorCount(mulufl), true, NULL },
-	{ (char *)"NBCD", nbcdfl, flavorCount(nbcdfl), true, NULL },
-	{ (char *)"NEG", negfl, flavorCount(negfl), true, NULL },
-	{ (char *)"NEGX", negxfl, flavorCount(negxfl), true, NULL },
-        { (char *)"NOLIST", NULL, 0, false, listOff },
-	{ (char *)"NOP", nopfl, flavorCount(nopfl), true, NULL },
-	{ (char *)"NOT", notfl, flavorCount(notfl), true, NULL },
-	{ (char *)"OFFSET", NULL, 0, false, offset },
-	{ (char *)"OPT", NULL, 0, false, opt },
-	{ (char *)"OR", orfl, flavorCount(orfl), true, NULL },
-	{ (char *)"ORG", NULL, 0, false, org },
-	{ (char *)"ORI", orifl, flavorCount(orifl), true, NULL },
-	{ (char *)"PAGE", NULL, 0, false, page },
-	{ (char *)"PEA", peafl, flavorCount(peafl), true, NULL },
-	{ (char *)"REG", NULL, 0, false, reg },
-        { (char *)"REPEAT", NULL, 0, false, asmStructure },
-	{ (char *)"RESET", resetfl, flavorCount(resetfl), true, NULL },
-	{ (char *)"ROL", rolfl, flavorCount(rolfl), true, NULL },
-	{ (char *)"ROR", rorfl, flavorCount(rorfl), true, NULL },
-	{ (char *)"ROXL", roxlfl, flavorCount(roxlfl), true, NULL },
-	{ (char *)"ROXR", roxrfl, flavorCount(roxrfl), true, NULL },
-	//{ (char *)"RTD", rtdfl, flavorCount(rtdfl), true, NULL },
-	{ (char *)"RTE", rtefl, flavorCount(rtefl), true, NULL },
-	{ (char *)"RTR", rtrfl, flavorCount(rtrfl), true, NULL },
-	{ (char *)"RTS", rtsfl, flavorCount(rtsfl), true, NULL },
-	{ (char *)"SBCD", sbcdfl, flavorCount(sbcdfl), true, NULL },
-	{ (char *)"SCC", sccfl, flavorCount(sccfl), true, NULL },
-	{ (char *)"SCS", scsfl, flavorCount(scsfl), true, NULL },
-	{ (char *)"SECTION", NULL, 0, false, section },
-	{ (char *)"SEQ", seqfl, flavorCount(seqfl), true, NULL },
-	{ (char *)"SET", NULL, 0, false, set },
-	{ (char *)"SF", sffl, flavorCount(sffl), true, NULL },
-	{ (char *)"SGE", sgefl, flavorCount(sgefl), true, NULL },
-	{ (char *)"SGT", sgtfl, flavorCount(sgtfl), true, NULL },
-	{ (char *)"SHI", shifl, flavorCount(shifl), true, NULL },
-	{ (char *)"SHS", sccfl, flavorCount(sccfl), true, NULL },
-	{ (char *)"SIMHALT", NULL, 0, false, simhalt },
-	{ (char *)"SLE", slefl, flavorCount(slefl), true, NULL },
-	{ (char *)"SLO", scsfl, flavorCount(scsfl), true, NULL },
-	{ (char *)"SLS", slsfl, flavorCount(slsfl), true, NULL },
-	{ (char *)"SLT", sltfl, flavorCount(sltfl), true, NULL },
-	{ (char *)"SMI", smifl, flavorCount(smifl), true, NULL },
-	{ (char *)"SNE", snefl, flavorCount(snefl), true, NULL },
-	{ (char *)"SPL", splfl, flavorCount(splfl), true, NULL },
-	{ (char *)"ST", stfl, flavorCount(stfl), true, NULL },
-	{ (char *)"STOP", stopfl, flavorCount(stopfl), true, NULL },
-	{ (char *)"SUB", subfl, flavorCount(subfl), true, NULL },
-	{ (char *)"SUBA", subafl, flavorCount(subafl), true, NULL },
-	{ (char *)"SUBI", subifl, flavorCount(subifl), true, NULL },
-	{ (char *)"SUBQ", subqfl, flavorCount(subqfl), true, NULL },
-	{ (char *)"SUBX", subxfl, flavorCount(subxfl), true, NULL },
-	{ (char *)"SVC", svcfl, flavorCount(svcfl), true, NULL },
-	{ (char *)"SVS", svsfl, flavorCount(svsfl), true, NULL },
-	{ (char *)"SWAP", swapfl, flavorCount(swapfl), true, NULL },
-	{ (char *)"TAS", tasfl, flavorCount(tasfl), true, NULL },
-	{ (char *)"TRAP", trapfl, flavorCount(trapfl), true, NULL },
-	{ (char *)"TRAPV", trapvfl, flavorCount(trapvfl), true, NULL },
-	{ (char *)"TST", tstfl, flavorCount(tstfl), true, NULL },
-        { (char *)"UNLESS", NULL, 0, false, asmStructure },
-	{ (char *)"UNLK", unlkfl, flavorCount(unlkfl), true, NULL },
-        { (char *)"UNTIL", NULL, 0, false, asmStructure },
-        { (char *)"WHILE", NULL, 0, false, asmStructure }
+	{ "ABCD", abcdfl, flavorCount(abcdfl), true, NULL },
+	{ "ADD", addfl, flavorCount(addfl), true, NULL },
+	{ "ADDA", addafl, flavorCount(addafl), true, NULL },
+	{ "ADDI", addifl, flavorCount(addifl), true, NULL },
+	{ "ADDQ", addqfl, flavorCount(addqfl), true, NULL },
+	{ "ADDX", addxfl, flavorCount(addxfl), true, NULL },
+	{ "AND", andfl, flavorCount(andfl), true, NULL },
+	{ "ANDI", andifl, flavorCount(andifl), true, NULL },
+	{ "ASL", aslfl, flavorCount(aslfl), true, NULL },
+	{ "ASR", asrfl, flavorCount(asrfl), true, NULL },
+	{ "BCC", bccfl, flavorCount(bccfl), true, NULL },
+	{ "BCHG", bchgfl, flavorCount(bchgfl), true, NULL },
+	{ "BCLR", bclrfl, flavorCount(bclrfl), true, NULL },
+	{ "BCS", bcsfl, flavorCount(bcsfl), true, NULL },
+	{ "BEQ", beqfl, flavorCount(beqfl), true, NULL },
+        { "BFCHG", bfchgfl, flavorCount(bfchgfl), true, NULL },
+        { "BFCLR", bfclrfl, flavorCount(bfclrfl), true,  NULL },
+        { "BFEXTS", bfextsfl, flavorCount(bfextsfl), true,  NULL },
+        { "BFEXTU", bfextufl, flavorCount(bfextufl), true,  NULL },
+        { "BFFFO", bfffofl, flavorCount(bfffofl), true,  NULL },
+        { "BFINS", bfinsfl, flavorCount(bfinsfl), true,  NULL },
+        { "BFSET", bfsetfl, flavorCount(bfsetfl), true,  NULL },
+        { "BFTST", bftstfl, flavorCount(bftstfl), true,  NULL },
+	{ "BGE", bgefl, flavorCount(bgefl), true, NULL },
+	{ "BGT", bgtfl, flavorCount(bgtfl), true, NULL },
+	{ "BHI", bhifl, flavorCount(bhifl), true, NULL },
+	{ "BHS", bccfl, flavorCount(bccfl), true, NULL },
+	{ "BLE", blefl, flavorCount(blefl), true, NULL },
+	{ "BLO", bcsfl, flavorCount(bcsfl), true, NULL },
+	{ "BLS", blsfl, flavorCount(blsfl), true, NULL },
+	{ "BLT", bltfl, flavorCount(bltfl), true, NULL },
+	{ "BMI", bmifl, flavorCount(bmifl), true, NULL },
+	{ "BNE", bnefl, flavorCount(bnefl), true, NULL },
+	{ "BPL", bplfl, flavorCount(bplfl), true, NULL },
+	{ "BRA", brafl, flavorCount(brafl), true, NULL },
+	{ "BSET", bsetfl, flavorCount(bsetfl), true, NULL },
+	{ "BSR", bsrfl, flavorCount(bsrfl), true, NULL },
+	{ "BTST", btstfl, flavorCount(btstfl), true, NULL },
+	{ "BVC", bvcfl, flavorCount(bvcfl), true, NULL },
+	{ "BVS", bvsfl, flavorCount(bvsfl), true, NULL },
+	{ "CHK", chkfl, flavorCount(chkfl), true, NULL },
+	{ "CLR", clrfl, flavorCount(clrfl), true, NULL },
+	{ "CMP", cmpfl, flavorCount(cmpfl), true, NULL },
+	{ "CMPA", cmpafl, flavorCount(cmpafl), true, NULL },
+	{ "CMPI", cmpifl, flavorCount(cmpifl), true, NULL },
+	{ "CMPM", cmpmfl, flavorCount(cmpmfl), true, NULL },
+	{ "CNOP", NULL, 0, false, cnop },
+	{ "DBCC", dbccfl, flavorCount(dbccfl), true, NULL },
+	{ "DBCS", dbcsfl, flavorCount(dbcsfl), true, NULL },
+	{ "DBEQ", dbeqfl, flavorCount(dbeqfl), true, NULL },
+	{ "DBF", dbffl, flavorCount(dbffl), true, NULL },
+	{ "DBGE", dbgefl, flavorCount(dbgefl), true, NULL },
+	{ "DBGT", dbgtfl, flavorCount(dbgtfl), true, NULL },
+	{ "DBHI", dbhifl, flavorCount(dbhifl), true, NULL },
+	{ "DBHS", dbccfl, flavorCount(dbccfl), true, NULL },
+	{ "DBLE", dblefl, flavorCount(dblefl), true, NULL },
+	{ "DBLO", dbcsfl, flavorCount(dbcsfl), true, NULL },
+        { "DBLOOP", NULL, 0, false, asmStructure },
+	{ "DBLS", dblsfl, flavorCount(dblsfl), true, NULL },
+	{ "DBLT", dbltfl, flavorCount(dbltfl), true, NULL },
+	{ "DBMI", dbmifl, flavorCount(dbmifl), true, NULL },
+	{ "DBNE", dbnefl, flavorCount(dbnefl), true, NULL },
+	{ "DBPL", dbplfl, flavorCount(dbplfl), true, NULL },
+	{ "DBRA", dbrafl, flavorCount(dbrafl), true, NULL },
+	{ "DBT", dbtfl, flavorCount(dbtfl), true, NULL },
+	{ "DBVC", dbvcfl, flavorCount(dbvcfl), true, NULL },
+	{ "DBVS", dbvsfl, flavorCount(dbvsfl), true, NULL },
+	{ "DC", NULL, 0, false, dc },
+	{ "DCB", NULL, 0, false, dcb },
+	{ "DIVS", divsfl, flavorCount(divsfl), true, NULL },
+	{ "DIVU", divufl, flavorCount(divufl), true, NULL },
+	{ "DS", NULL, 0, false, ds },
+        { "ELSE", NULL, 0, false, asmStructure },
+	{ "END", NULL, 0, false, funct_end },
+        { "ENDF", NULL, 0, false, asmStructure },
+        { "ENDF", NULL, 0, false, asmStructure },
+        { "ENDI", NULL, 0, false, asmStructure },
+        { "ENDW", NULL, 0, false, asmStructure },
+	{ "EOR", eorfl, flavorCount(eorfl), true, NULL },
+	{ "EORI", eorifl, flavorCount(eorifl), true, NULL },
+	{ "EQU", NULL, 0, false, equ },
+	{ "EXG", exgfl, flavorCount(exgfl), true, NULL },
+	{ "EXT", extfl, flavorCount(extfl), true, NULL },
+        { "FAIL", NULL, 0, false, failError },
+        { "FOR", NULL, 0, false, asmStructure },
+        { "IF", NULL, 0, false, asmStructure },
+	{ "ILLEGAL", illegalfl, flavorCount(illegalfl), true, NULL },
+        { "INCBIN", NULL, 0, false, incbin },
+        { "INCLUDE", NULL, 0, false, include },
+	{ "JMP", jmpfl, flavorCount(jmpfl), true, NULL },
+	{ "JSR", jsrfl, flavorCount(jsrfl), true, NULL },
+	{ "LEA", leafl, flavorCount(leafl), true, NULL },
+	{ "LINK", linkfl, flavorCount(linkfl), true, NULL },
+        { "LIST", NULL, 0, false, listOn },
+	{ "LSL", lslfl, flavorCount(lslfl), true, NULL },
+	{ "LSR", lsrfl, flavorCount(lsrfl), true, NULL },
+        { "MACRO", NULL, 0, false, macro },
+        { "MEMORY", NULL, 0, false, memory },
+	{ "MOVE", movefl, flavorCount(movefl), true, NULL },
+	{ "MOVEA", moveafl, flavorCount(moveafl), true, NULL },
+	//{ "MOVEC", movecfl, flavorCount(movecfl), true, NULL },
+	{ "MOVEM", movefl, 0, false, movem },   // movefl is only used for syntax highlighting
+	{ "MOVEP", movepfl, flavorCount(movepfl), true, NULL },
+	{ "MOVEQ", moveqfl, flavorCount(moveqfl), true, NULL },
+	//{ "MOVES", movesfl, flavorCount(movesfl), true, NULL },
+	{ "MULS", mulsfl, flavorCount(mulsfl), true, NULL },
+	{ "MULU", mulufl, flavorCount(mulufl), true, NULL },
+	{ "NBCD", nbcdfl, flavorCount(nbcdfl), true, NULL },
+	{ "NEG", negfl, flavorCount(negfl), true, NULL },
+	{ "NEGX", negxfl, flavorCount(negxfl), true, NULL },
+        { "NOLIST", NULL, 0, false, listOff },
+	{ "NOP", nopfl, flavorCount(nopfl), true, NULL },
+	{ "NOT", notfl, flavorCount(notfl), true, NULL },
+	{ "OFFSET", NULL, 0, false, offset },
+	{ "OPT", NULL, 0, false, opt },
+	{ "OR", orfl, flavorCount(orfl), true, NULL },
+	{ "ORG", NULL, 0, false, org },
+	{ "ORI", orifl, flavorCount(orifl), true, NULL },
+	{ "PAGE", NULL, 0, false, page },
+	{ "PEA", peafl, flavorCount(peafl), true, NULL },
+	{ "REG", NULL, 0, false, reg },
+        { "REPEAT", NULL, 0, false, asmStructure },
+	{ "RESET", resetfl, flavorCount(resetfl), true, NULL },
+	{ "ROL", rolfl, flavorCount(rolfl), true, NULL },
+	{ "ROR", rorfl, flavorCount(rorfl), true, NULL },
+	{ "ROXL", roxlfl, flavorCount(roxlfl), true, NULL },
+	{ "ROXR", roxrfl, flavorCount(roxrfl), true, NULL },
+	//{ "RTD", rtdfl, flavorCount(rtdfl), true, NULL },
+	{ "RTE", rtefl, flavorCount(rtefl), true, NULL },
+	{ "RTR", rtrfl, flavorCount(rtrfl), true, NULL },
+	{ "RTS", rtsfl, flavorCount(rtsfl), true, NULL },
+	{ "SBCD", sbcdfl, flavorCount(sbcdfl), true, NULL },
+	{ "SCC", sccfl, flavorCount(sccfl), true, NULL },
+	{ "SCS", scsfl, flavorCount(scsfl), true, NULL },
+	{ "SECTION", NULL, 0, false, section },
+	{ "SEQ", seqfl, flavorCount(seqfl), true, NULL },
+	{ "SET", NULL, 0, false, set },
+	{ "SF", sffl, flavorCount(sffl), true, NULL },
+	{ "SGE", sgefl, flavorCount(sgefl), true, NULL },
+	{ "SGT", sgtfl, flavorCount(sgtfl), true, NULL },
+	{ "SHI", shifl, flavorCount(shifl), true, NULL },
+	{ "SHS", sccfl, flavorCount(sccfl), true, NULL },
+	{ "SIMHALT", NULL, 0, false, simhalt },
+	{ "SIZE", NULL, 0, false, dataSize },
+	{ "SLE", slefl, flavorCount(slefl), true, NULL },
+	{ "SLO", scsfl, flavorCount(scsfl), true, NULL },
+	{ "SLS", slsfl, flavorCount(slsfl), true, NULL },
+	{ "SLT", sltfl, flavorCount(sltfl), true, NULL },
+	{ "SMI", smifl, flavorCount(smifl), true, NULL },
+	{ "SNE", snefl, flavorCount(snefl), true, NULL },
+	{ "SPL", splfl, flavorCount(splfl), true, NULL },
+	{ "ST", stfl, flavorCount(stfl), true, NULL },
+	{ "STOP", stopfl, flavorCount(stopfl), true, NULL },
+	{ "SUB", subfl, flavorCount(subfl), true, NULL },
+	{ "SUBA", subafl, flavorCount(subafl), true, NULL },
+	{ "SUBI", subifl, flavorCount(subifl), true, NULL },
+	{ "SUBQ", subqfl, flavorCount(subqfl), true, NULL },
+	{ "SUBX", subxfl, flavorCount(subxfl), true, NULL },
+	{ "SVC", svcfl, flavorCount(svcfl), true, NULL },
+	{ "SVS", svsfl, flavorCount(svsfl), true, NULL },
+	{ "SWAP", swapfl, flavorCount(swapfl), true, NULL },
+	{ "TAS", tasfl, flavorCount(tasfl), true, NULL },
+	{ "TRAP", trapfl, flavorCount(trapfl), true, NULL },
+	{ "TRAPV", trapvfl, flavorCount(trapvfl), true, NULL },
+	{ "TST", tstfl, flavorCount(tstfl), true, NULL },
+        { "UNLESS", NULL, 0, false, asmStructure },
+	{ "UNLK", unlkfl, flavorCount(unlkfl), true, NULL },
+        { "UNTIL", NULL, 0, false, asmStructure },
+        { "WHILE", NULL, 0, false, asmStructure }
        };
 
 
