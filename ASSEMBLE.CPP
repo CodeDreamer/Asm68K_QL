@@ -83,7 +83,7 @@
 // include "textS.h"
 // include "editorOptions.h"
 #include <fcntl.h>
-#include <unistd.h>
+//#include <unistd.h>
 
 
 
@@ -196,7 +196,6 @@ void REMOVECR(char *line)
 int assembleFile(char fileName[], char tempName[], AnsiString workName)
 {
   AnsiString outName;
-  int i;
 
   try {
     tmpFile = fopen(tempName, "w+");
@@ -303,7 +302,7 @@ int strcap(char *d, char *s)
 char *skipSpace(char *p)
 {
   try {
-	while (isspace(*p))
+	while (isspace((unsigned char)*p))
 		p++;
 	return p;
   }
@@ -414,6 +413,9 @@ int assemble(char *line, int *errorPtr)
       listLoc();
 
     // RA don't to_upper if we see INCLUDE or INCBIN
+#ifdef _MSC_VER
+    strcap(capLine, line);
+#else
     if ( NULL==strcasestr(line, "INCLUDE") && NULL==strcasestr(line, "INCBIN"))
        strcap(capLine, line);
     else
@@ -421,6 +423,7 @@ int assemble(char *line, int *errorPtr)
          //fprintf(listFile,"found INCLUDE or INCLUDEBIN, copying line to: %s :::\n",line); // RA debug
          strncpy(capLine, line, 255);
        }
+#endif
 
     p = skipSpace(capLine);               // skip leading white space
     tokenize(capLine, (char *)", \t\n\r", token, tokens); // RA // tokenize line

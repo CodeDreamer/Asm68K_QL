@@ -16,6 +16,12 @@
 #ifndef asmH
 #define asmH
 
+// Windows
+#ifdef _MSC_VER
+#define strcasecmp _stricmp
+#define unlink _unlink
+#endif
+
 /* include system header files for prototype checking */
 #include <stdio.h>
 #include <string.h>
@@ -204,7 +210,7 @@ typedef struct {
 
 /* Structure for the instruction table */
 typedef struct {
-	char *mnemonic;		/* Mnemonic */
+	const char *mnemonic;		/* Mnemonic */
 	flavor *flavorPtr;	/* Pointer to flavor list */
 	char flavorCount;	/* Number of flavors in flavor list */
 	bool parseFlag;		/* Should assemble() parse the operands? */

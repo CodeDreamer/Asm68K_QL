@@ -286,7 +286,7 @@ int asmMacro(int size, char *label, char *arg, int *errorPtr)
     printCond = false;
     macL = macLine;
     capL = capLine;
-    while(*capL && isspace(*capL))              // copy spaces
+    while(*capL && isspace((unsigned char)*capL))              // copy spaces
       *macL++ = *capL++;
     if (*capL == '*') {                         // if comment line
       while(*capL)                              // copy rest of line
@@ -299,7 +299,7 @@ int asmMacro(int size, char *label, char *arg, int *errorPtr)
       else {                            // else, include code
         // do macro parameter substitution and label generation
         while (*capL) {                         // while not empty
-          while (*capL && !(isspace(*capL))) {  // while not empty and not space
+          while (*capL && !(isspace((unsigned char)*capL))) {  // while not empty and not space
             if (*capL == '\\') {                // if macro label or parameter
               capL++;
               if (*capL == '@') {               // if \@ macro label
@@ -327,8 +327,8 @@ int asmMacro(int size, char *label, char *arg, int *errorPtr)
               } else
                 NEWERROR(error, SYNTAX);
             // if NARG opcode
-            //} else if( !(stricmp(token[1], "NARG")) ) {
-            } else if( !(strncasecmp(capL, "NARG", 4)) && !(isalnum(*(capL+4))) ) {   // RA strnicmp
+            } else if( !(stricmp(token[1], "NARG")) ) {
+            //} else if( !(strncasecmp(capL, "NARG", 4)) && !(isalnum(*(capL+4))) ) {   // RA strnicmp
               sprintf(macL,"%d",argN);
               if (argN > 9)
                 macL++;
@@ -338,7 +338,7 @@ int asmMacro(int size, char *label, char *arg, int *errorPtr)
               *macL++ = *capL++;        // copy macro line
             }
           }
-          while(*capL && isspace(*capL))  // copy spaces
+          while(*capL && isspace((unsigned char)*capL))  // copy spaces
             *macL++ = *capL++;
         }
       } // end else, include code

@@ -105,7 +105,7 @@ int initList(char *name)
 
     //  TDateTime DateTime = Time();  // store the current date and time
     // RA vvv added OS agnostic #ifdefs, On Windows it's like this: 'Created On: 4/29/2019 8:47:37 PM'
-    #if (defined(_WIN32) || defined(__WIN64__) ) && !defined(__CYGWIN__)
+    #if 0
       AnsiString timeStr = DateTimeToStr(Now()); // date & time to a string
     #else
       #include <time.h>       // The format of this is not "4/29/2019 8:47:37 PM", it's "Mon Apr 29 20:47:37 2019"
