@@ -352,7 +352,7 @@ char *opParse(char *p, opDescriptor *d, int *errorPtr)
           d->reg = p[2] - '0';
         // Check for plain address register indirect with displacement
         if (p[3] == ')') {
-            if (*errorPtr == 0 && d->data == 0)   // optimize away constant zero displacement. TODO: handle expressions that are undefined in pass 1 and evaluate to zero in pass 2 (they need a displacement)
+            if (*errorPtr == 0 && optimize && d->data == 0)   // optimize away constant zero displacement. TODO: handle expressions that are undefined in pass 1 and evaluate to zero in pass 2 (they need a displacement)
                 d->mode = AnInd;
           else
             d->mode = AnIndDisp;
@@ -425,7 +425,7 @@ char *opParse(char *p, opDescriptor *d, int *errorPtr)
         }
       }
 
-      if (expr.isRelative || *errorPtr == INCOMPLETE) {
+      if (expr.isRelative || (isRelative && *errorPtr == INCOMPLETE)) {
           d->mode = PCDisp;
           return p;
       }

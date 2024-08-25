@@ -66,6 +66,7 @@ bool MEXflag  = true;           // true expands macro calls in listing
 bool SEXflag  = true;           // true expands structured code in listing
 bool WARflag  = true;           // true shows Warnings during assembly
 bool noFileName;        // true indicates no name for current source file
+bool optimize = true;			// true enables optimizations
 
 // Editor flags
 tabTypes tabType;

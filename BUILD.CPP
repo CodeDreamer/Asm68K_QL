@@ -176,7 +176,8 @@ int	arithReg(int mask, int size,
   // Check whether the instruction is an immediate ADDA or SUBA
   //   that can be assembled as ADDQ or SUBQ
   type = mask & 0xF000;
-  if ((type == 0xD000 || type == 0x9000)        // if ADDA or SUBA
+  if (  optimize
+        &&(type == 0xD000 || type == 0x9000)        // if ADDA or SUBA
         && source->mode == IMMEDIATE
         && size != BYTE_SIZE
         && (source->backRef && source->data >= 1 && source->data <= 8)
@@ -780,15 +781,15 @@ int exg(int mask, int size, opDescriptor *source, opDescriptor *dest,
 {
   if (pass2) {
     // Are a data register and an address register being exchanged?
-    if (source->mode != dest->mode)
+    //if (source->mode != dest->mode)
       // If so, the address register goes in bottom three bits
       if (source->mode == AnDirect)
-	mask |= source->reg | (dest->reg << 9);
+        mask |= source->reg | (dest->reg << 9);
       else
-	mask |= dest->reg | (source->reg << 9);
-      else
-	// Otherwise it doesn't matter which way they go
-	mask |= dest->reg | (source->reg << 9);
+        mask |= dest->reg | (source->reg << 9);
+      //else
+        // Otherwise it doesn't matter which way they go
+        //mask |= dest->reg | (source->reg << 9);
       output((int) (mask), WORD_SIZE);
    }
    loc += 2;

@@ -994,14 +994,14 @@ int main(int argc, char *argv[])
 
   listFlag = true;           // True if a listing is desired
   objFlag  = true;           // True if an S-Record object code file is desired
-  binFlag  = true;
+  binFlag  = true;           // True to generate output binary file
   CEXflag  = false;          // True is Constants are to be EXpanded
   BITflag  = true;           // True to assemble bitfield instructions
   CREflag  = true;           // true adds symbol table to listing
   MEXflag  = false;          // true expands macro calls in listing
   SEXflag  = false;          // true expands structured code in listing
   WARflag  = true;           // true shows Warnings during assembly
-
+  optimize = true;
 
 
 
@@ -1028,6 +1028,7 @@ int main(int argc, char *argv[])
           if (strncmp(argv[i],"--no-macroexpand",32 )==0)     {MEXflag  = false; continue;}
           if (strncmp(argv[i],"--no-structureexpand",32 )==0) {SEXflag  = false; continue;}
           if (strncmp(argv[i],"--no-warnings",32 )==0)        {WARflag  = false; continue;}
+          if (strncmp(argv[i], "--noopt", 32) == 0)           {optimize = false; continue;}
 
           if (argv[i][0]=='-') {help(); fprintf(stderr,"\n\nUnknown option \"%s\"",argv[i]); exit(1);}
 
