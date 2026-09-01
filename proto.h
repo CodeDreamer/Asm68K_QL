@@ -106,7 +106,7 @@ int     page(int, char *, char *, int *);
 
 int	dc(int, char *, char *, int *);
 
-char	*collect(char *, char *);
+char	*collect(char *, char *, char endChar);
 
 int	dcb(int, char *, char *, int *);
 
@@ -167,6 +167,7 @@ int     asmStructure(int, char *, char *, int *);  //ck
 int     tokenize(char* , char*, char*[], char*);  //ck
 
 int     optCRE();                               //ck
+void writeSym(const char* szFileName);
 
 char	*evalList(char *, unsigned short *, int *);
 

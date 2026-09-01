@@ -294,11 +294,13 @@ int equ(int size, char* label, char* op, int* errorPtr)
 				NEWERROR(*errorPtr, LABEL_REQUIRED);
 			}
 			else {
-				define(label, value, pass2, true, errorPtr);
+                symbolDef* symbol = define(label, value, pass2, true, errorPtr);
 				if (pass2 && listFlag && *errorPtr < MINOR) {
 					sprintf(listPtr, "=%08X ", value.value); // RA suppress warning on modern 64 bit machines
 					listPtr += 10;
 				}
+                if (symbol)
+                    symbol->flags |= EQU_SYM;
 			}
 		else
 			NEWERROR(*errorPtr, SYNTAX);
@@ -386,8 +388,8 @@ int dc(int size, char* label, char* op, int* errorPtr)
 	}
 	do {
 		p = op;                             // save location of op
-		if (*op == '\'') {                  // if string
-			op = collect(++op, string);       // copy to string
+		if (*op == '\'' || *op == '"') {                  // if string
+			op = collect(++op, string, *p);       // copy to string
 			if (!isspace((unsigned char)*op) && *op != ',') { // if stuff after string
 				op = p;                         // restore op
 				goto notString;                 // ***** GOTO *****
@@ -445,11 +447,11 @@ notString:                              // process non strings
  *	is padded with four nulls at the end.
  **********************************************************************/
 
-char *collect(char *s, char *d)
+char *collect(char *s, char *d, char endChar)
 {
   while (*s) {
-    if (*s == '\'')
-      if (*(s+1) == '\'') {
+    if (*s == endChar)
+      if (*(s+1) == endChar) {
 	*d++ = *s;
 	s += 2;
       } else {
@@ -766,10 +768,14 @@ int include(int size, char *label, char *fileName, int *errorPtr)
       skipList = false;
       continuation = false;
       printCond = false;           // true to print condition on listing line
-      if(line[0] != '*' && line[1] != '~')      // don't assemble font info
-
+      // Skip EASy68K font info lines ("*~..."), but assemble everything else,
+      // including ordinary "*" comment lines. Comment lines must reach
+      // assemble() so that listLine() records them: the listing is used to map
+      // addresses back to source lines, and a dropped line shifts every
+      // subsequent line of the included file.
+      if(!(line[0] == '*' && line[1] == '~'))
         assemble(line, &error);
-        lineNum++;
+      lineNum++;
     }
     fclose(inFile);
     inFile = tmpInFile;                 // restore previous input file

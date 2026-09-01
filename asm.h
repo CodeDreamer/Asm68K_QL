@@ -129,11 +129,15 @@ void REMOVECR(char *line);
 #define FORWARD_REF          0x10A
 #define LABEL_TOO_LONG       0x10B
 #define SEVERITY	         0xF00
+
+// Symbol flags
 #define BACKREF	              0x01
 #define REDEFINABLE           0x02	
 #define REG_LIST_SYM          0x04	
 #define MACRO_SYM             0x08    
-#define DS_SYM                0x10    
+#define DS_SYM                0x10   
+#define EQU_SYM				  0x20
+
 #define IMMEDIATE		   0x00800
 #define BYTE_SIZE                1
 #define WORD_SIZE                2
@@ -167,7 +171,7 @@ void REMOVECR(char *line);
 // modern C and C++ rules.) Also I'm guessing that these may have originally been
 // #defines because they're all uppercase.
 
-#define SIGCHARS 33
+#define SIGCHARS 64
 #define MAX_ARGS 36       // maximum number of macro arguments
 #define ARG_SIZE 256      // maximum size of each argument
 

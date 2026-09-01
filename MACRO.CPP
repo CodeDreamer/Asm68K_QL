@@ -97,7 +97,8 @@ int macro(int size, char *label, char *op, int *errorPtr)
     NEWERROR(*errorPtr, MULTIPLE_DEFS);
     return NORMAL;
   }
-  symbol->flags |= MACRO_SYM;         // set MACRO_SYM flag
+  if (symbol)
+    symbol->flags |= MACRO_SYM;         // set MACRO_SYM flag
 
   if (pass2 && listFlag)
     listLine(line);

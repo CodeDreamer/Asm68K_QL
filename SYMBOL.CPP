@@ -21,6 +21,8 @@
 // include "mainS.h"
 // include "textS.h"
 #include "asm.h"
+#include <vector>
+#include <algorithm>
 
 extern FILE *listFile;
 extern char buffer[256];  //ck used to form messages for display in windows
@@ -210,6 +212,39 @@ int optCRE()
     }
   }
   return NORMAL;
+}
+
+bool compareSymbolAddress(const symbolDef* a, const symbolDef* b) {
+	return a->value.value < b->value.value;
+}
+
+// Write out labels to sym file
+void writeSym(const char *szFileName)
+{
+	std::vector<symbolDef*> symList;
+
+	FILE* f = fopen(szFileName, "wb");
+	if (f)
+	{
+		for (int i = 0; i <= MAXHASH; i++) {      // for all values of hash()
+			symbolDef *s = htable[i];
+			while (s)	 // while symbols remain in the list
+			{
+				if (!(s->flags & (EQU_SYM | MACRO_SYM | REDEFINABLE | REG_LIST_SYM)))
+				{
+					symList.push_back(s);
+				}
+				s = s->next;
+			}
+		}
+
+		std::sort(symList.begin(), symList.end(), compareSymbolAddress);
+
+		for (symbolDef *s : symList)
+			fprintf(f, "%X,%s\n", s->value.value, s->name);
+
+		fclose(f);
+	}
 }
 
 //---------------------------------------------------------------------

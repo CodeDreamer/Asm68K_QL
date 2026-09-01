@@ -245,6 +245,10 @@ int assembleFile(char fileName[], char tempName[], AnsiString workName)
     fclose(inFile);
     fclose(tmpFile);
     finishList();
+    if (optCRE) {
+        outName = ChangeFileExt(workName, ".sym");
+        writeSym(outName.c_str());
+    }
     if (objFlag)
       finishObj();
     if (binFlag)
@@ -448,7 +452,12 @@ int assemble(char *line, int *errorPtr)
 
     if (comment)                                // if comment
       if (pass2 && listFlag) {
-        listLine(line, lineIdent);
+        // Honour skipList, so comment lines inside a macro body are not
+        // re-listed on every expansion when MEX is off. Without this, a macro
+        // containing comments adds listing lines that have no source line
+        // behind them, which breaks address-to-source mapping.
+        if (!skipList)
+          listLine(line, lineIdent);
         return NORMAL;
       }
 

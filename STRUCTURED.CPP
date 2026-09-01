@@ -365,24 +365,31 @@ int asmStructure(int size, char *label, char *arg, int *errorPtr)
       skipList = true;                        // don't display this line in ASSEMBLE.CPP
     }
 
+    unsigned int elseLbl = 0;
     // -------------------- ELSE --------------------
     if (!(strcmp(token[1], "ELSE"))) {
-      unsigned int elseLbl = stcStack.top();
-      stcStack.pop();
-      if ((elseLbl & stcMask) != stcMaskI)
-        NEWERROR(*errorPtr, NO_IF);
-      // determine size of extent
-      if (token[2][0] == '.') {
-        if (token[2][1] == 'S')
-          extent = ".S\t";
-        else if (token[2][1] == 'L')
-          extent = ".L\t";
-        else {
-          NEWERROR(*errorPtr, SYNTAX);
+        if (stcStack.empty()) {
+            NEWERROR(*errorPtr, NO_IF);
         }
-      } else {
-        extent = "\t";
-      }
+        else {
+            elseLbl = stcStack.top();
+            stcStack.pop();
+            if ((elseLbl & stcMask) != stcMaskI)
+                NEWERROR(*errorPtr, NO_IF);
+            // determine size of extent
+            if (token[2][0] == '.') {
+                if (token[2][1] == 'S')
+                    extent = ".S\t";
+                else if (token[2][1] == 'L')
+                    extent = ".L\t";
+                else {
+                    NEWERROR(*errorPtr, SYNTAX);
+                }
+            }
+            else {
+                extent = "\t";
+            }
+        }
 
       stcLabel = "_" + IntToHex(stcLabelI, 8);
       stcLine = "\tBRA" + extent + stcLabel + "\n";
@@ -396,13 +403,17 @@ int asmStructure(int size, char *label, char *arg, int *errorPtr)
 
     // -------------------- ENDI --------------------
     if (!(strcmp(token[1], "ENDI"))) {
-      unsigned int endiLbl = stcStack.top();
-      stcStack.pop();
-      if ((endiLbl & stcMask) != stcMaskI)        // if label is not from an IF
-        NEWERROR(*errorPtr, NO_IF);
-      stcLine = "_" + IntToHex(endiLbl, 8) + "\n";
-      assembleStc(stcLine.c_str());
-      skipList = true;                        // don't display this line in ASSEMBLE.CPP
+        if (stcStack.empty()) {
+            NEWERROR(*errorPtr, NO_IF);
+        } else {
+            unsigned int endiLbl = stcStack.top();
+            stcStack.pop();
+            if ((endiLbl & stcMask) != stcMaskI)        // if label is not from an IF
+                NEWERROR(*errorPtr, NO_IF);
+            stcLine = "_" + IntToHex(endiLbl, 8) + "\n";
+            assembleStc(stcLine.c_str());
+            skipList = true;                        // don't display this line in ASSEMBLE.CPP
+        }
     }
 
     // -------------------- WHILE --------------------
