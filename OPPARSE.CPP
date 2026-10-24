@@ -58,6 +58,25 @@ extern char numBuf[20];
 //#define isTerm(c)   (isspace((unsigned char)(c)) || (c == ',') || c == '\0')
 //#define isRegNum(c) ((c >= '0') && (c <= '7'))
 
+// Find the first ',' inside the parenthesis group that starts at p[0] == '('.
+// Returns NULL if the group has no top-level comma, so that the operand
+// separator in e.g. "(label).L,A6" is not mistaken for "(d,An)".
+static char *commaInParens(char *p)
+{
+  int depth = 0;
+  for (char *s = p; *s; s++) {
+    if (*s == '(')
+      depth++;
+    else if (*s == ')') {
+      if (--depth == 0)
+        return NULL;
+    }
+    else if (*s == ',' && depth == 1)
+      return s;
+  }
+  return NULL;
+}
+
 char *opParse(char *p, opDescriptor *d, int *errorPtr)
 {
   char *n;
@@ -203,7 +222,7 @@ char *opParse(char *p, opDescriptor *d, int *errorPtr)
 
     // Check for (d,An) or (d,An,Xi)
     if (p[0] == '(') {
-      n = strchr(p,',');
+      n = commaInParens(p);
       if (n) {
         if((n[1] == 'A' && isRegNum(n[2])) || (n[1] == 'S' && n[2] == 'P') ) {
           p++;                  // skip (
@@ -257,7 +276,7 @@ char *opParse(char *p, opDescriptor *d, int *errorPtr)
     // Check for PC relative (disp,PC) or (disp,PC,Xi)    ck 4-16-2002
     //    PC relative disp(PC) & disp(PC,Xi) is checked later
     if (p[0] == '(') {
-      n = strchr(p,',');
+      n = commaInParens(p);
       if (n && n[1] == 'P' && n[2] == 'C') {
         p++;                  // skip (
         // evaluate displacement, p points to ','
