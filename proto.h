@@ -22,6 +22,8 @@ int	processFile(void);
 
 int	assemble(char *, int *);
 
+char	*readSourceLine(char *line, FILE *f);
+
 int     createCode(char *, int *);
 
 int     assembleFile(char fileName[], char tempName[], AnsiString workName);

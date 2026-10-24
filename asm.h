@@ -101,6 +101,7 @@ void REMOVECR(char *line);
 #define INV_OP_TYPE_MIX      0x308
 #define INV_RELATIVE		 0x309
 #define INV_ABSOLUTE         0x30A
+#define LINE_TOO_LONG        0x30B
 #define MINOR		         0x200
 #define INV_SIZE_CODE	     0x201
 #define INV_QUICK_CONST      0x202
@@ -264,6 +265,7 @@ extern bool SEXflag;           // true expands structured code in listing
 extern bool WARflag;           // true shows Warnings during assembly
 extern bool noFileName;        // true indicates no name for current source file
 extern bool optimize;		   // True enables optimizations
+extern bool lineTooLong;       // true if the last source line read was truncated
 
 
 

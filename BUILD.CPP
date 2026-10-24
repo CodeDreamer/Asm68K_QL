@@ -67,7 +67,8 @@ int move(int mask, int size,
   char destCode;
 
   // Check whether the instruction can be assembled as MOVEQ
-  if (source->mode == IMMEDIATE && source->backRef && source->size == 0
+  if (optimize
+       && source->mode == IMMEDIATE && source->backRef && source->size == 0
        && size == LONG_SIZE && dest->mode == DnDirect
        && source->data >= -128 && source->data <= 127) {
     moveq(0x7000, size, source, dest, errorPtr);
@@ -258,9 +259,9 @@ int	bitField(int mask, int size,
 {
   unsigned short type;
 
+  type = mask & 0x0700;         // also needed in pass 1 to size the extension words
   if (pass2)
   {
-    type = mask & 0x0700;
     if (type == BFINS)
       output((int) (mask | effAddr(dest)), WORD_SIZE);
     else
@@ -308,7 +309,8 @@ int	immedInst(int mask, int size,
   //   that can be assembled as ADDQ or SUBQ
   // Check the mask to determine the operation
   type = mask & 0xFF00;
-  if ((type == 0x0600 || type == 0x0400)
+  if (optimize
+        && (type == 0x0600 || type == 0x0400)
         && (source->backRef && source->data >= 1 && source->data <= 8)
         && source->size == 0)
     if (type == 0x0600) {

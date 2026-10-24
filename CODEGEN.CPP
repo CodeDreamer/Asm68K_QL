@@ -119,7 +119,7 @@ int effAddr(opDescriptor *operand)
   sprintf(buffer,"INVALID EFFECTIVE ADDRESSING MODE!\n");
   //Application->MessageBox(buffer, "Error", MB_OK);
     fprintf(stderr,"%s\n",buffer);
-  exit (0);
+  exit (1);
 
   return 0;
 }

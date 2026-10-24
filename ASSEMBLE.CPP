@@ -163,18 +163,39 @@ string ChangeFileExt(string in, const string& newExt) {
    
    string s=in;
 
-   string::size_type i = s.rfind('.', s.length());
+   // only a '.' in the file name counts, not one in a directory name
+   string::size_type dir = s.find_last_of("/\\");
+   string::size_type i = s.rfind('.');
 
-   if (i != string::npos) {
-      s.replace(i, newExt.length(), newExt);
-   }
-   else {
-       s.append(newExt);
-   }
+   if (i != string::npos && (dir == string::npos || i > dir))
+      s.erase(i);                       // remove the old extension
+   s.append(newExt);
 
    return s;
 }
 #endif
+
+bool lineTooLong;               // true if the last line read was truncated
+
+// Read one source line into line[256]. A longer line is truncated (keeping
+// its '\n') and lineTooLong is set; the rest of it is discarded so it isn't
+// assembled as a separate line.
+char *readSourceLine(char *line, FILE *f)
+{
+  if (!fgets(line, 256, f))
+    return NULL;
+  size_t len = strlen(line);
+  if (len == 255 && line[254] != '\n') {
+    int c = fgetc(f);
+    if (c != EOF) {             // not just a last line without '\n'
+      while (c != EOF && c != '\n')
+        c = fgetc(f);
+      line[254] = '\n';
+      lineTooLong = true;
+    }
+  }
+  return line;
+}
 
 //--- added by github.com/dmo2118
 void REMOVECR(char *line)
@@ -208,7 +229,8 @@ int assembleFile(char fileName[], char tempName[], AnsiString workName)
     inFile = fopen(fileName, "r");
     if (!inFile) {
 //      Application->MessageBox("Error reading source file.", "Error", MB_OK);
-      fprintf(stderr,"%s\n",buffer);
+      fprintf(stderr,"Error reading source file %s\n", fileName);
+      fclose(tmpFile);
       return SEVERE;
     }
 
@@ -227,7 +249,7 @@ int assembleFile(char fileName[], char tempName[], AnsiString workName)
     }
 
     // if binary file flag then create .bin file
-    if (objFlag) {
+    if (binFlag) {
         outName = ChangeFileExt(workName, ".bin");
         if (initBin(outName.c_str()) != NORMAL)  // RA   // if error initializing binary file
             binFlag = false;                        // disable object file creation
@@ -281,7 +303,7 @@ int assembleFile(char fileName[], char tempName[], AnsiString workName)
   catch( ... ) {
     sprintf(buffer, "ERROR: An exception occurred in routine 'assembleFile'. \n");
     printError(NULL, EXCEPTION, 0);
-    return 0; // RA
+    return SEVERE;
   }
 
   return NORMAL;
@@ -338,8 +360,7 @@ int processFile()
   int error;
 
   try {
-    offsetMode = false;         // clear flags
-    showEqual = false;
+    showEqual = false;          // clear flags
     pass2 = false;
     macroNestLevel = 0;         // count nested macro calls
     noENDM = false;             // set to true if no ENDM in macro
@@ -370,9 +391,12 @@ int processFile()
       lineNumL68 = 1;
       endFlag = false;
       isRelative = true;
+      offsetMode = false;           // an OFFSET block may be open at the end of pass 1
       errorCount = warningCount = 0;
       skipCond = false;             // true conditionally skips lines in code
-      while(!endFlag && fgets(line, 256, inFile)) {
+      nestLevel = 0;                // nesting level of conditional directives
+      lineTooLong = false;
+      while(!endFlag && readSourceLine(line, inFile)) {
 
         // RA - not sure I still need this.
         // Handle MSDOS/Win line endings by chomping the CR in the CRLF.
@@ -412,13 +436,29 @@ int processFile()
   return NORMAL;
 }
 
+// Evaluate the operand of an IFxx directive into *value. Returns true if the
+// value can be used; otherwise the error is reported and the condition is
+// treated as true. Forward references are rejected, as pass 1 can't know
+// their value and both passes must assemble the same lines.
+static bool evalCondition(char *op, int *value, int *errorPtr)
+{
+  exprVal expr;
+  bool backRef;
+  int error = OK;
+
+  expr.value = 0;
+  eval(op, &expr, &backRef, &error);
+  if (error < SEVERE && !backRef)
+    NEWERROR(error, INV_FORWARD_REF);
+  NEWERROR(*errorPtr, error);
+  *value = expr.value;
+  return error < ERRORN;
+}
+
 // Conditionally Assemble one line of code
 int assemble(char *line, int *errorPtr)
 {
-  exprVal value;
-  value.value = 0;
-  bool backRef = false;
-  int error2Ptr = 0;
+  int value;                      // IFxx operand value
   char capLine[256];
   char *p;
   bool comment;                   // true when line is comment
@@ -428,6 +468,11 @@ int assemble(char *line, int *errorPtr)
 
     if (pass2 && listFlag)
       listLoc();
+
+    if (lineTooLong) {                  // set by readSourceLine()
+      NEWERROR(*errorPtr, LINE_TOO_LONG);
+      lineTooLong = false;
+    }
 
     // RA don't to_upper if we see INCLUDE or INCBIN
 #ifdef _MSC_VER
@@ -450,7 +495,7 @@ int assemble(char *line, int *errorPtr)
     else
       comment = false;
 
-    if (comment)                                // if comment
+    if (comment && *errorPtr == OK)             // if comment (with an error, fall through to list it)
       if (pass2 && listFlag) {
         // Honour skipList, so comment lines inside a macro body are not
         // re-listed on every expansion when MEX is off. Without this, a macro
@@ -508,8 +553,7 @@ int assemble(char *line, int *errorPtr)
         if (token[2] == empty) {                // if argument missing
           NEWERROR(*errorPtr, INVALID_ARG);
         } else {
-          eval(token[2], &value, &backRef, &error2Ptr);
-          if (error2Ptr < ERRORN && value.value != 0) { // if not condition
+          if (evalCondition(token[2], &value, errorPtr) && value != 0) { // if not condition
             skipCond = true;                    // conditionally skip lines
             nestLevel++;                        // nest level of skip
           }
@@ -527,8 +571,7 @@ int assemble(char *line, int *errorPtr)
         if (token[2] == empty) {                // if argument missing
           NEWERROR(*errorPtr, INVALID_ARG);
         } else {
-          eval(token[2], &value, &backRef, &error2Ptr);
-          if (error2Ptr < ERRORN && value.value == 0) { // if not condition
+          if (evalCondition(token[2], &value, errorPtr) && value == 0) { // if not condition
             skipCond = true;                    // skip lines in macro
             nestLevel++;                        // nest level of skip
           }
@@ -546,8 +589,7 @@ int assemble(char *line, int *errorPtr)
         if (token[2] == empty) {                // if argument missing
           NEWERROR(*errorPtr, INVALID_ARG);
         } else {
-          eval(token[2], &value, &backRef, &error2Ptr);
-          if (error2Ptr < ERRORN && value.value >= 0) { // if not condition
+          if (evalCondition(token[2], &value, errorPtr) && value >= 0) { // if not condition
             skipCond = true;                    // conditionally skip lines
             nestLevel++;                        // nest level of skip
           }
@@ -565,8 +607,7 @@ int assemble(char *line, int *errorPtr)
         if (token[2] == empty) {                // if argument missing
           NEWERROR(*errorPtr, INVALID_ARG);
         } else {
-          eval(token[2], &value, &backRef, &error2Ptr);
-          if (error2Ptr < ERRORN && value.value > 0) { // if not condition
+          if (evalCondition(token[2], &value, errorPtr) && value > 0) { // if not condition
             skipCond = true;                    // conditionally skip lines
             nestLevel++;                        // nest level of skip
           }
@@ -584,8 +625,7 @@ int assemble(char *line, int *errorPtr)
         if (token[2] == empty) {                // if argument missing
           NEWERROR(*errorPtr, INVALID_ARG);
         } else {
-          eval(token[2], &value, &backRef, &error2Ptr);
-          if (error2Ptr < ERRORN && value.value <= 0) { // if not condition
+          if (evalCondition(token[2], &value, errorPtr) && value <= 0) { // if not condition
             skipCond = true;                    // conditionally skip lines
             nestLevel++;                        // nest level of skip
           }
@@ -603,8 +643,7 @@ int assemble(char *line, int *errorPtr)
         if (token[2] == empty) {                // if argument missing
           NEWERROR(*errorPtr, INVALID_ARG);
         } else {
-          eval(token[2], &value, &backRef, &error2Ptr);
-          if (error2Ptr < ERRORN && value.value < 0) {  // if not condition
+          if (evalCondition(token[2], &value, errorPtr) && value < 0) {  // if not condition
             skipCond = true;                    // conditionally skip lines
             nestLevel++;                        // nest level of skip
           }
@@ -1047,8 +1086,8 @@ int main(int argc, char *argv[])
           s=assembleFile((char *)sourceFile.c_str(), (char *)tempFile.c_str(), (char *)sourceFile.c_str());
           unlink(tempFile.c_str());
 
-          if (s==SEVERE) exit(1); // RA - returns NULL, corrected to SEVERE on failure as some return status 0 for NORMAL!
-          if (!s) exit(1); 
+          if (s != NORMAL || errorCount > 0) exit(1);   // fail on I/O errors and assembly errors
   }
+  return 0;
 }
 #endif

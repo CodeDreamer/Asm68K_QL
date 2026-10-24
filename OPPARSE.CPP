@@ -77,14 +77,28 @@ static char *commaInParens(char *p)
   return NULL;
 }
 
+static char *opParseOperand(char *p, opDescriptor *d, int *errorPtr);
+
+// Parse one operand. Errors found in the operand are merged into *errorPtr
+// so that errors already reported on the line (label, source operand) are
+// kept.
 char *opParse(char *p, opDescriptor *d, int *errorPtr)
+{
+  int status = OK;
+
+  p = opParseOperand(p, d, &status);
+  NEWERROR(*errorPtr, status);
+  return p;
+}
+
+// *errorPtr is OK on entry, so it only describes errors in this operand.
+static char *opParseOperand(char *p, opDescriptor *d, int *errorPtr)
 {
   char *n;
   int parenCount;
   exprVal expr;
 
   try {
-    *errorPtr = OK;
     d->size = 0;
     // if addressing mode in ( )
     // remove spaces inside parenthesis       CK Oct-26-2008
@@ -126,7 +140,7 @@ char *opParse(char *p, opDescriptor *d, int *errorPtr)
 					d->size = LONG_SIZE;
 					p += 2;
 				}
-                if (*errorPtr == OK && expr.isRelative) {
+                if (*errorPtr < ERRORN && expr.isRelative) {
                     NEWERROR(*errorPtr, INV_RELATIVE);
                 }
 				return p;
@@ -227,8 +241,10 @@ char *opParse(char *p, opDescriptor *d, int *errorPtr)
         if((n[1] == 'A' && isRegNum(n[2])) || (n[1] == 'S' && n[2] == 'P') ) {
           p++;                  // skip (
           // evaluate displacement, p points to ','
-	        p = eval(p, &expr, &(d->backRef), errorPtr);
-            d->data = expr.value;
+          p = eval(p, &expr, &(d->backRef), errorPtr);
+          if (!p)               // syntax error in displacement
+            return NULL;
+          d->data = expr.value;
         }
       }
 
@@ -281,6 +297,8 @@ char *opParse(char *p, opDescriptor *d, int *errorPtr)
         p++;                  // skip (
         // evaluate displacement, p points to ','
         p = eval(p, &expr, &(d->backRef), errorPtr);
+        if (!p)               // syntax error in displacement
+          return NULL;
         d->data = expr.value;
       }
 
@@ -371,7 +389,9 @@ char *opParse(char *p, opDescriptor *d, int *errorPtr)
           d->reg = p[2] - '0';
         // Check for plain address register indirect with displacement
         if (p[3] == ')') {
-            if (*errorPtr == 0 && optimize && d->data == 0)   // optimize away constant zero displacement. TODO: handle expressions that are undefined in pass 1 and evaluate to zero in pass 2 (they need a displacement)
+            // optimize away constant zero displacement. Only for backward references:
+            // a forward reference has no value in pass 1, so it always keeps the displacement
+            if (*errorPtr == 0 && optimize && d->backRef && d->data == 0)
                 d->mode = AnInd;
           else
             d->mode = AnIndDisp;
@@ -444,13 +464,20 @@ char *opParse(char *p, opDescriptor *d, int *errorPtr)
         }
       }
 
-      if (expr.isRelative || (isRelative && *errorPtr == INCOMPLETE)) {
+      // A forward reference has no value (and no relative flag) in pass 1
+      bool unknown = !pass2 && !d->backRef;
+      // An explicit .W/.L suffix always selects absolute addressing
+      bool absSize = p[0] == '.' && (p[1] == 'W' || p[1] == 'L');
+
+      if (!absSize && (expr.isRelative || (isRelative && unknown))) {
           d->mode = PCDisp;
           return p;
       }
 
       // Check for absolute   (check this last ck 12-11-2002)
-      if (isTerm(p[0]) || *errorPtr == INCOMPLETE || p[0]=='.' || p[0]=='{') {
+      if (isTerm(p[0]) || unknown || p[0]=='.' || p[0]=='{') {
+        if (expr.isRelative && *errorPtr < ERRORN)  // relocatable address can't be absolute
+          NEWERROR(*errorPtr, INV_RELATIVE);
         // Determine size of absolute address
         if (p[0]=='.' && p[1]=='L') {
           d->mode = AbsLong;

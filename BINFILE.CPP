@@ -45,8 +45,12 @@ extern char newOrg;
 extern char buffer[256];  //ck used to form messages for display in windows
 extern char numBuf[20];
 extern bool offsetMode;
+extern bool isRelative;
 
-int binAddr;
+int binAddr;                    // address of the current file position
+int binBase;                    // address of the first data byte in the file
+int binEnd;                     // address just past the last data byte written
+long binHeaderSize;             // bytes of QDOS header before the data
 bool newFile = false;
 //unsigned int sectionCount;     // number of sections
 //unsigned int byteCount;        // code bytes in current program section
@@ -70,7 +74,8 @@ int initBin(const char *name)
   newFile = true;
   //sectionCount = 0;                     // # of sections
   //byteCount = 0;                        // clear section byte count
-  binAddr = 0;                          // default address
+  binAddr = binBase = binEnd = 0;       // default address
+  binHeaderSize = 0;
 
   execDataSize = 500;
 
@@ -117,7 +122,12 @@ int outputBin(int newAddr, int data, int size)
             fwrite(buff, 1, sizeof(buff), binFile);
             writeBigEndian(execDataSize, LONG_SIZE);
             writeBigEndian(0, LONG_SIZE);
+            binHeaderSize = sizeof(buff) + 2 * LONG_SIZE;
         }
+
+        // Relocatable code starts at address 0; absolute code (ORG)
+        // starts at the address of its first data
+        binAddr = binBase = binEnd = isRelative ? 0 : newAddr;
       }
 
       // if writing WORD_SIZE or LONG_SIZE data to odd address
@@ -125,8 +135,21 @@ int outputBin(int newAddr, int data, int size)
           newAddr++;                          // next address
       }
 
-      // If the new address doesn't follow the previous data's address
+      if (newAddr < binBase) {
+          fprintf(stderr, "Binary output: data at $%X is before the start of the file ($%X)\n", newAddr, binBase);
+          return MILD_ERROR;
+      }
+
+      // ORG moved back into data already written: overwrite it
+      if (newAddr < binAddr || (newAddr > binAddr && newAddr <= binEnd)) {
+          fseek(binFile, binHeaderSize + (newAddr - binBase), SEEK_SET);
+          binAddr = newAddr;
+      }
+
+      // If the new address is past the end of the data, pad with zeros
       if (newAddr > binAddr) {
+          fseek(binFile, 0, SEEK_END);
+          binAddr = binEnd;
         //currentFP = ftell(binFile);          // save current file position
         // position file at previous sections byte count
         //fseek(binFile, byteCountFP, SEEK_SET);
@@ -154,6 +177,8 @@ int outputBin(int newAddr, int data, int size)
       writeBigEndian(data, size);           // write the data to the file
       //byteCount += (int) size;             // count the bytes
       binAddr += (int) size;               // next address
+      if (binAddr > binEnd)
+          binEnd = binAddr;
       //fileSize += size;                     // keep track of file size
   }
   catch( ... ) {
@@ -168,8 +193,10 @@ int finishBin()
 {
   try {
   // make sure file contains an even number of bytes
-  if (binAddr % 2)                     // if odd size
+  if ((binEnd - binBase) % 2) {         // if odd size
+    fseek(binFile, 0, SEEK_END);
     writeBigEndian(0, 1);               // write an extra byte of 0
+  }
 
   //currentFP = ftell(binFile);          // save current file position
   //// position file at previous sections byte count

@@ -83,6 +83,8 @@ extern int mapProtectedStart, mapProtectedEnd;
 extern bool mapInvalid;
 extern int mapInvalidStart, mapInvalidEnd;
 
+static bool isRelativeOffset;   // isRelative before the Offset directive
+
 /***********************************************************************
  *	ORG directive.
  ***********************************************************************/
@@ -144,6 +146,7 @@ int section(int size, char *label, char *op, int *errorPtr)
 
   if (offsetMode) {
     loc = locOffset;            // restore loc used prior to Offset directive
+    isRelative = isRelativeOffset;
     offsetMode = false;         // turn off offset mode
   }
   if (*op) {                    // if section number
@@ -205,8 +208,10 @@ int offset(int size, char *label, char *op, int *errorPtr)
     if (isspace((unsigned char)*op) || !*op) {
       if (!offsetMode) {     // if not currently processing an Offset directive
         locOffset = loc;        // save current location
+        isRelativeOffset = isRelative;
         offsetMode = true;
       }
+      isRelative = false;       // offsets are absolute values, not addresses
       loc = newLoc.value;
       // Show new location counter on listing
       listLoc();
@@ -339,7 +344,12 @@ int set(int size, char *label, char *op, int *errorPtr)
       } else {
 	error = OK;
 	symbol = define(label, value, pass2, false, &error);   // ck 4-18-03
-	symbol->flags |= REDEFINABLE;
+	if (error >= ERRORN || !symbol)
+	  NEWERROR(*errorPtr, error == OK ? UNDEFINED : error);
+	else if (pass2 && !(symbol->flags & REDEFINABLE))
+	  NEWERROR(*errorPtr, MULTIPLE_DEFS);  // name is already an ordinary label or EQU
+	else
+	  symbol->flags |= REDEFINABLE;
 	if (pass2 && listFlag) {
 	  sprintf(listPtr, "=%08X ", value.value); // supress size warning on 64 bit machines
 	  listPtr += 10;
@@ -394,14 +404,14 @@ int dc(int size, char* label, char* op, int* errorPtr)
 				op = p;                         // restore op
 				goto notString;                 // ***** GOTO *****
 			}
-			p = string;
-			while (*p) {
-				outVal = *p++;
+			unsigned char *s = (unsigned char *)string;   // unsigned, so chars >= $80 don't sign extend
+			while (*s) {
+				outVal = *s++;
 				if (size > BYTE_SIZE)
-					outVal = (outVal << 8) + *p++;
+					outVal = (outVal << 8) + *s++;
 				if (size > WORD_SIZE) {
-					outVal = (outVal << 16) + (*p++ << 8);
-					outVal += *p++;
+					outVal = (outVal << 16) + (*s++ << 8);
+					outVal += *s++;
 				}
 				if (pass2)
 					output(outVal, size);
@@ -762,7 +772,7 @@ int include(int size, char *label, char *fileName, int *errorPtr)
     // until END directive or EOF
     includeNestLevel++;                 // count nest level of include directive
     lineNum = 1;
-    while(!endFlag && fgets(line, 256, inFile)) {
+    while(!endFlag && readSourceLine(line, inFile)) {
       REMOVECR(line);
       error = OK;
       skipList = false;

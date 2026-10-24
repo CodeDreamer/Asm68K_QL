@@ -104,7 +104,11 @@ int macro(int size, char *label, char *op, int *errorPtr)
     listLine(line);
 
   // move file pointer past ENDM directive
-  while(fgets(line, 256, inFile)) {
+  while(readSourceLine(line, inFile)) {
+    if (lineTooLong) {
+      NEWERROR(*errorPtr, LINE_TOO_LONG);
+      lineTooLong = false;
+    }
     if (pass == 0)
       fprintf(tmpFile, "%s", line);           // write macro line to tmpFile // RA warning: format not a string literal and no format arguments
     lineNum++;
@@ -229,10 +233,14 @@ int asmMacro(int size, char *label, char *arg, int *errorPtr)
           }
         }
 
-        if (fgets(line, 256, inFile) == NULL) {      // get next line
+        if (readSourceLine(line, inFile) == NULL) {      // get next line
           NEWERROR(*errorPtr, INVALID_ARG);
           macroNestLevel--;               // count nested macro calls
           return NORMAL;
+        }
+        if (lineTooLong) {
+          NEWERROR(*errorPtr, LINE_TOO_LONG);
+          lineTooLong = false;
         }
         strcap(capLine, line);
         capL = capLine;

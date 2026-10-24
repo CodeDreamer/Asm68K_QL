@@ -241,6 +241,9 @@ int printError(FILE *outFile, int errorCode, int lineNum)
     case ILLEGAL_SYMBOL:
       sprintf(buffer, "ERROR: Illegal symbol\n");
       break;
+    case LINE_TOO_LONG:
+      sprintf(buffer, "ERROR: Source line too long, truncated to 254 characters\n");
+      break;
     default :
       if (errorCode > MINOR)
         sprintf(buffer, "ERROR: No message defined\n");

@@ -292,19 +292,19 @@ char* evalNumber(char* p, exprVal* numberPtr, bool* refPtr, int* errorPtr)
 			while (!endFlag && *p) {
 				if (*p == '\'')           // if '
 					if (*(p + 1) == '\'') {   // if ''
-						literal = (literal << 8) + *p;
+						literal = (literal << 8) + (unsigned char)*p;
 						i++;
 						p++;
 					}
 					else                    // ending ' found
 						endFlag = true;       // end of string literal
 				else {
-					literal = (literal << 8) + *p;
+					literal = (literal << 8) + (unsigned char)*p;
 					i++;
 				}
 				p++;
 			}
-			if (i == 0 || *p == '\0') { // if no operand or unexpected end of string
+			if (i == 0 || !endFlag) { // if no operand or no closing '
 				NEWERROR(*errorPtr, SYNTAX);
 				return NULL;
 			}
@@ -324,6 +324,10 @@ char* evalNumber(char* p, exprVal* numberPtr, bool* refPtr, int* errorPtr)
 				if (i < SIGCHARS)
 					name[i++] = *p;
 				p++;
+				// A trailing .W/.L is a size suffix (SYMBOL.W, #SYMBOL.L), not part of the name
+				if (*p == '.' && (p[1] == 'W' || p[1] == 'L') &&
+					!(isalnum(p[2]) || p[2] == '_' || p[2] == '$' || p[2] == '.'))
+					break;
 			} while (isalnum(*p) || *p == '_' || *p == '$' || *p == '.'); // *ck 12-8-2005 so labels may have dots
 			//} while (isalnum(*p) || *p == '_' || *p == '$'); // *ck 2-22-2007 operand.L caused error (no dots in labels)
 			name[i] = '\0';
@@ -367,6 +371,7 @@ char* evalNumber(char* p, exprVal* numberPtr, bool* refPtr, int* errorPtr)
 				}
 				else
 					NEWERROR(*errorPtr, INCOMPLETE);
+				numberPtr->value = 0;
 				*refPtr = false;
 			}
 
